@@ -16,11 +16,12 @@ Material + estimativa de valor em 05/2026
                Insulation class: B  /  Current: 3.0A  /  Resistance: 0.95+-10%mH
                Holding torque: 12kg.cm / 1.2nm
 1 - R$133,00 - Driver DM556 motor de passo
+1 - R$014,50 - Fixador Emenda Alumínio 9x40, P/ Correia Gt2 - Impressora 3d
 X - R$???,00 - Parafusos/Porcas/Arruelas M4
 X - R$???,00 - Cabos e conexões
 1 - R$020,00 - Suporte Motor De Passo Nema 23 - 90°
 1 - R$035,00 - Tensor de correa para ender 3
-Total: +-R$1.300,00
+Total: +-R$1.350,00
 
 
 
