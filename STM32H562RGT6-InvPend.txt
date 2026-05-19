@@ -1,0 +1,33 @@
+STM32H562RGT6 - Pêndulo invertido
+
+STMCubeMX Version 6.17.0
+Start My project from MCU
+  Access to mcu selector
+  
+  For better performance it is recommended to enable the instruction cache (ICACHE)
+  and the MPU to access OTP & RO areas.
+  Do you want to apply now such default configuration? (YES)
+  
+  Do you want to create a new project:
+  (*) Without TrustZone activated?
+  
+  Aba Project Manager
+    Project Name: STM32H562RGT6-InvPend
+    Toolchain / IDE: STMCubeIDE
+  
+  Linker Settings
+    Minimum Heap Size 0x200
+    Minimum Stack Size 0x400
+    
+  Aba Pinout & Configuration
+    System Core
+      RCC
+        HSE: Crystal/Ceramic Resonator
+        LSE: Crystal/Ceramic Resonator
+        
+  Aba Clock Configuration
+    Input frequency LSE: 32.768KHz
+    Input frequency HSE: 8MHz
+    HCLK(MHz): 250
+  
+  
