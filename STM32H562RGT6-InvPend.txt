@@ -1,5 +1,28 @@
 STM32H562RGT6 - Pêndulo invertido
 
+Material
+1 - R$ 99,90 - Tubo Aluminio Retangular Perfil 50,8mm X 101,60mm X 1,20mm - 100 Cm - Liga 6063-T5
+1 - R$129,90 - Fonte Chaveada 10a 36v 360w Bivolt 110v/220v
+1 - R$ 62,90 - 2 Mts Correia Gt2 6mm Largura + 1 Polia Gt2 20 Dentes F 8mm
+1 - R$ 19,39 - 1 Polia Gt2 Esticadora Lisa T20 Com Rolamento Furo 5mm L.6mm
+1 - R$230,77 - Kit 1 Guia Linear 15mmx900mm + 1 Patins 15mm C/ Abas -hgw15
+1 - R$292,36 - Encoder óptico rotativo OMCH 2500PR, Optoelectronic, E6B2-CWZ6C
+1 - R$054,00 - STM32H562RG da WeAct Studio
+1 - R$055,00 - lcd tft de 240x240 1.54 polegadas com botão codificador rotativo ec11 ST7789
+1 - R$120,99 - Nema 23 motor de passo 20-50v dc motores 1.2nm 57HS56mm axie 8mm 688,9g
+               Step angle: 1.8°+-5%  /  Phase No.: 2  /  Insulation resistance: 100(550V DC)
+               Insulation class: B  /  Current: 3.0A  /  Resistance: 0.95+-10%mH
+               Holding torque: 12kg.cm / 1.2nm
+1 - R$133,00 - Driver DM556 motor de passo
+X - R$???,00 - Parafusos/Porcas/Arruelas M4
+1 - R$020,00 - Suporte Motor De Passo Nema 23 - 90°
+1 - R$035,00 - Tensor de correa para ender 3
+Total: +-R$1.300,00
+
+
+
+
+
 STMCubeMX Version 6.17.0
 Start My project from MCU
   Access to mcu selector
