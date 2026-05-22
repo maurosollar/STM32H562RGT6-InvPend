@@ -4,7 +4,7 @@ Projeto de controle de pêndulo invertido utilizando STM32H562RGT6.
 
 ## Documentação
 
-- [Lista de materiais](./bom.txt)
+- [Lista de materiais](./boom.txt)
 - [Diagrama da placa STM32](./Docs/WeAct-STM32H5_64PIN-CoreBoard_V11 SchDoc.pdf)
 
 ## Fotos
