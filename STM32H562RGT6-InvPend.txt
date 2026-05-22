@@ -10,11 +10,15 @@ Material + estimativa de valor em 05/2026
 1 - R$054,00 - STM32H562RG da WeAct Studio
                High-performance, Arm Cortex-M33 with TrustZone, MCU with 1-MByte Flash,
                640-Kbyte RAM, 250 MHz CPU
-1 - R$055,00 - lcd tft de 240x240 1.54 polegadas com botão codificador rotativo ec11 ST7789
+1 - R$055,00 - lcd tft ST7789 de 240x240 1.54 polegadas com botão codificador rotativo ec11
 1 - R$120,99 - Nema 23 motor de passo 20-50v dc motores 1.2nm 57HS56mm axie 8mm 688,9g
-               Step angle: 1.8°+-5%  /  Phase No.: 2  /  Insulation resistance: 100(550V DC)
-               Insulation class: B  /  Current: 3.0A  /  Resistance: 0.95+-10%mH
-               Holding torque: 12kg.cm / 1.2nm
+               Step angle: 1.8°+-5% / Phase No.: 2 / Insulation resistance: 100(550V DC)
+               Insulation class: B / Holding torque: 12kg.cm / 1.2nm / Tensão Nominal: 3,9V
+               Corrente por fase: 3A / Resistência por fase = 1,3 (+-10%) ohms 
+               Indutância por fase = 6,5 (+-20%) mH / Torque: 3 N.m (30kgf.cm)
+               Temperatura ambiente: -20ºC ~ 50ºC /  Quantidade de cabos: 4
+               Comprimento do Motor = 112mm /  Diâmetro do Eixo = 8mm
+               Peso: 1,7Kg 
 1 - R$133,00 - Driver DM556 motor de passo
 1 - R$014,50 - Fixador Emenda Alumínio 9x40, P/ Correia Gt2 - Impressora 3d
 X - R$???,00 - Parafusos/Porcas/Arruelas M4
