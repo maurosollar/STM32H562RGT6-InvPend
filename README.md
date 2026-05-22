@@ -15,6 +15,6 @@ Projeto de controle de pêndulo invertido utilizando STM32H562RGT6.
 
 ### Início da juntada dos materiais
 
-<img src="Docs/Motor_Passo_Nema23.png" width="200">
+<img src="Docs/montagem01.png" width="200">
 
 
