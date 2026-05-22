@@ -1,0 +1,55 @@
+Material + estimativa de valor em 05/2026
+
+1 - R$ 99,90 - Tubo Aluminio Retangular Perfil 50,8mm X 101,60mm X 1,20mm - 100 Cm - Liga 6063-T5
+
+1 - R$129,90 - Fonte Chaveada 10a 36v 360w Bivolt 110v/220v
+
+1 - R$ 62,90 - 2 Mts Correia Gt2 6mm Largura + 1 Polia Gt2 20 Dentes F 8mm
+
+1 - R$ 19,39 - 1 Polia Gt2 Esticadora Lisa T20 Com Rolamento Furo 5mm L.6mm
+
+1 - R$230,77 - Kit 1 Guia Linear 15mmx900mm + 1 Patins 15mm C/ Abas -hgw15
+
+1 - R$292,36 - Encoder óptico rotativo OMCH 2500PR, Optoelectronic, E6B2-CWZ6C
+               5 to 24V DC / 0.6W max (80mA max) / NPN Open-Collector output
+               Output capacity: 
+               Applied voltage: 30VDC max / Sink current: 35mA max / Residual voltage: 0.4V max
+               Maximum response frequency: 100Khz
+               Phase differente of output: between output A and output B 90+-45°
+               Starting torque: 0.98mN.m max.
+               Moment of inertia: 1x10^-6kg.m2 max
+               Slewing speed: 6000r/min
+               Shaft loading: Radial: 30N Axial: 20N
+
+1 - R$054,00 - STM32H562RG da WeAct Studio
+               High-performance, Arm Cortex-M33 with TrustZone, MCU with 1-MByte Flash,
+               640-Kbyte RAM, 250 MHz CPU
+
+1 - R$055,00 - lcd tft ST7789 de 240x240 1.54 polegadas com botão codificador rotativo ec11
+
+1 - R$120,99 - Nema 23 motor de passo 20-50v dc motores 1.2nm 57HS56mm axie 8mm 688,9g
+               Step angle: 1.8°+-5% / Phase No.: 2 / Insulation resistance: 100(550V DC)
+               Insulation class: B / Holding torque: 12kg.cm / 1.2nm / Tensão Nominal: 3,9V
+               Corrente por fase: 3A / Resistência por fase = 1,3 (+-10%) ohms 
+               Indutância por fase = 6,5 (+-20%) mH / Torque: 3 N.m (30kgf.cm)
+               Temperatura ambiente: -20ºC ~ 50ºC /  Quantidade de cabos: 4
+               Comprimento do Motor = 112mm /  Diâmetro do Eixo = 8mm
+               Peso: 1,7Kg 
+
+1 - R$133,00 - Driver DM556 motor de passo
+
+1 - R$014,50 - Fixador Emenda Alumínio 9x40, P/ Correia Gt2 - Impressora 3d
+
+X - R$???,00 - Parafusos/Porcas/Arruelas M4
+
+X - R$???,00 - Cabos e conexões
+
+1 - R$020,00 - Suporte Motor De Passo Nema 23 - 90°
+
+1 - R$035,00 - Tensor de correa para ender 3
+
+Total: +-R$1.350,00
+
+
+
+
