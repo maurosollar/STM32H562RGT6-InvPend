@@ -10,7 +10,7 @@ Projeto de controle de pêndulo invertido utilizando STM32H562RGT6.
     <img src="Docs/STM32H562RGT6.png" width="200">
     <img src="Docs/DM556.png" width="200">
     <img src="Docs/Encoder_Incremental.png" width="200">
-    <img src="Docs/Motor_Passo_Nema23.png" width="300">    
+    <img src="Docs/Motor_Passo_Nema23.png" width="200">    
 </p>
 
 
