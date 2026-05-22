@@ -4,7 +4,7 @@ Projeto de controle de pêndulo invertido utilizando STM32H562RGT6.
 
 ## Fotos
 
-### STM32 / Driver do motor de passo / Encoder de 2500 pulsos por revolução / Motor de passo
+### STM32 / Driver  / Encoder de 2500 pulsos por revolução / Motor de passo
 
 <p float="left">
     <img src="Docs/STM32H562RGT6.png" width="200">
