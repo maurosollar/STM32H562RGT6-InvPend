@@ -55,5 +55,59 @@ Start My project from MCU
     Input frequency LSE: 32.768KHz
     Input frequency HSE: 8MHz
     HCLK(MHz): 250
+    
+    
+=== Parte do encoder ===
+
+-Pinout & Configuration / Timers
+  TIM2
+    Combined Channels: Encoder Mode
+      Configuration / Parameter Settings
+        Counter Settings
+          Counter Period (AutoReloadRegister 32bits): 4294967295 = 0xffffffff
+          Internal Clock Division(CKD): No Division
+          auto-reload preload: Enable
+        Encoder
+          Encoder Mode: Encoder Mode TI1 and TI2
+          __ Parameters for Channel 1 ___
+          Polarity: Falling Edge
+          Input filter: 10
+          __ Parameters for Channel 2 ___
+          Polarity: Falling Edge
+          Input filter: 10   
+      Configuration / NVIC Settings
+        TIM2 global interrupt (*)
+
+        
 
 ```
+
+### Encoder rotativo OMCH 2500PR, Optoelectronic, E6B2-CWZ6C
+
+```
+Output circuit configuration: NPN Open-collector output
+Maximum response frequency: 100KHz
+
+- Shiel F.G - GND
+- Brown ----- Vdc 5 a 24V
+- Blue ------ OV
+- Black ----- Out A phase
+- White ----- Out B phase
+- Orange ---- Out Z phase
+
+Obs.: Out Z phase -> Gera 1 pulso por revolução.
+      Se o canal A muda antes do B -> gira em um sentido.
+      Se o B muda antes do A -> gira no outro.
+
+```
+
+```
+
+Rascunho:
+#include <stdio.h>
+
+Obs.: Tentei utilizar o val_encoder = __HAL_TIM_GET_COUNTER(&htim2);
+      Mas tive que utilizar TIM2->CNT
+      Estava alterando valor do contador assim que executava __HAL_TIM-GET....
+      
+```      
