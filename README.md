@@ -59,7 +59,7 @@ Start My project from MCU
     
 === Parte do encoder ===
 
--Pinout & Configuration / Timers
+Pinout & Configuration / Timers
   TIM2
     Combined Channels: Encoder Mode
       Configuration / Parameter Settings
@@ -82,24 +82,27 @@ Start My project from MCU
 
 ```
 
-### Encoder rotativo OMCH 2500PR, Optoelectronic, E6B2-CWZ6C
+### Conexão do encoder rotativo OMCH 2500PR, Optoelectronic, E6B2-CWZ6C
 
 ```
-Output circuit configuration: NPN Open-collector output
-Maximum response frequency: 100KHz
 
-- Shiel F.G - GND
-- Brown ----- Vdc 5 a 24V
-- Blue ------ OV
-- Black ----- Out A phase
-- White ----- Out B phase
-- Orange ---- Out Z phase
 
-Obs.: Out Z phase -> Gera 1 pulso por revolução.
+- Shiel F.G - GND --------- GND
+- Brown ----- Vdc 5 a 24V - 5V
+- Blue ------ OV ---------- GND
+- Black ----- Out A phase - PA0
+- White ----- Out B phase - PA1
+- Orange ---- Out Z phase - Não conectado
+
+Obs.: Out Z phase -> Gera 1 pulso por revolução. (Não utilizei)
       Se o canal A muda antes do B -> gira em um sentido.
       Se o B muda antes do A -> gira no outro.
+      Output circuit configuration: NPN Open-collector output
+      Maximum response frequency: 100KHz
 
 ```
+
+
 
 ```
 
