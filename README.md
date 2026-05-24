@@ -76,8 +76,11 @@ Pinout & Configuration / Timers
           Polarity: Falling Edge
           Input filter: 10   
       Configuration / NVIC Settings
-        TIM2 global interrupt ( )  Não precisa ativar, será lido em um loop na malha fechada.
-
+        TIM2 global interrupt ( )  Obs.: Interupção de over ou underflow, não ativado.
+      Configuration / GPIO Settings
+        Fazer para PA0 e PA1
+        GPIO pull-up/Pull-down: Pull-up (Obs.: Como estes pinos estão configurados pelo dispositivo encoder, não deve ser necessário, mas ativei)
+        
         
 
 ```
