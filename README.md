@@ -76,7 +76,7 @@ Pinout & Configuration / Timers
           Polarity: Falling Edge
           Input filter: 10   
       Configuration / NVIC Settings
-        TIM2 global interrupt (*)
+        TIM2 global interrupt ( )  Não precisa ativar, será lido em um loop na malha fechada.
 
         
 
