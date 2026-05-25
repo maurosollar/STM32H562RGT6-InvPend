@@ -79,7 +79,8 @@ Pinout & Configuration / Timers
         TIM2 global interrupt ( )  Obs.: Interupção de over ou underflow, não ativado.
       Configuration / GPIO Settings
         Fazer para PA0 e PA1
-        GPIO pull-up/Pull-down: Pull-up (Obs.: Como estes pinos estão configurados pelo dispositivo encoder, não deve ser necessário, mas ativei)
+        GPIO pull-up/Pull-down: Pull-up (Obs.: Como estes pinos estão configurados pelo dispositivo
+                                               encoder, não deve ser necessário, mas ativei)
         
         
 
@@ -107,10 +108,11 @@ Obs.: Out Z phase -> Gera 1 pulso por revolução. (Não utilizei)
 
 ### Conexão do driver do motor de passo DM556 c/ Motor de passo 57HS112-3004A08-D21
 
-```
 O drive tem um bloco de chaves dip switch, para descrição de cada um, veja imagem acima. 
 Adicionei esta tabela abaixo em função da figura não ter RMS, mas pode ser calculada assim (Peak = RMS * 1.4)
 A corrente que vem estipulada no motor é RMS, no caso 3A, selecionei 2.7A RMS, um pouco abaixo da corrente do motor.
+```
+
 +-------------+
 | Peak | RMS  |
 +------+------+
@@ -134,10 +136,10 @@ SW1 = on  -\
 SW2 = on   +--> Corrente RMS 2.7A
 SW3 = off -/
 SW4 = off = Half Current (Quando motor tiver parado, é energizado com meia corrente)
-SW5 = off-\
-SW6 = on   \ 400 pulsos por revolução (testar e depois fazer os cálculos.)
-SW7 = on   /
-SW8 = on -/
+SW5 = off -\
+SW6 = on    \ 400 pulsos por revolução (testar e depois fazer os cálculos.)
+SW7 = on    /
+SW8 = on  -/
 
 PUL+, DIR+ e ENA+ ligado ao 5VDC
 PA8  = PUL-
