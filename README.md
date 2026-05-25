@@ -105,7 +105,7 @@ Obs.: Out Z phase -> Gera 1 pulso por revolução. (Não utilizei)
 
 ```
 
-### Conexão do driver do motor de passo DM556 c/ Motor de passo 57HS112-3004A08-D21
+### Configuração do driver do motor de passo DM556 para o Motor de passo 57HS112-3004A08-D21
 
 O driver tem um bloco de chaves com 8 dip switch, para descrição de cada um, veja imagem do driver acima. 
 Adicionei esta tabela abaixo em função da figura não ter RMS, mas pode ser calculada assim (Peak = RMS * 1.4)
