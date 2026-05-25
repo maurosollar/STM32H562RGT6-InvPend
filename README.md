@@ -105,15 +105,42 @@ Obs.: Out Z phase -> Gera 1 pulso por revolução. (Não utilizei)
 
 ```
 
-
+### Conexão do driver motor de passo DM556 c/ Motor de passo 57HS112-3004A08-D21
 
 ```
+O drive tem um bloco de chaves dip switch, veja imagem acima. 
+Adicionei esta tabela abaixo em função da figura não ter RMS, mas pode ser calculada assim (Peak = RMS * 1.4)
+A corrente que vem estipulada no motor é RMS, no caso 3A, selecionei 2.7A RMS, um pouco abaixo da corrente do motor.
++-------------+
+| Peak | RMS  |
++------+------+
+| 2.1A | 1.5A |
++------+------+
+| 2.7A | 1.9A |
++------+------+
+| 3.2A | 2.3A |
++------+------+
+| 3.8A | 2.7A |
++------+------+
+| 4.3A | 3.1A |
++------+------+
+| 4.9A | 3.5A |
++------+------+
+| 5.6A | 4.0A |
++-------------+
 
-Rascunho:
-#include <stdio.h>
+Ficou assim:
+SW1 = on  -\
+SW2 = on   +--> Corrente RMS 2.7A
+SW3 = off -/
+SW4 = off = Half Current (Quando motor tiver parado, é energizado com meia corrente)
+SW5 = off-\
+SW6 = on   \ 400 pulsos por revolução (testar e depois fazer os cálculos.)
+SW7 = on   /
+SW8 = on -/
 
-Obs.: Tentei utilizar o val_encoder = __HAL_TIM_GET_COUNTER(&htim2);
-      Mas tive que utilizar TIM2->CNT
-      Estava alterando valor do contador assim que executava __HAL_TIM-GET....
-      
-```      
+
+
+
+
+```   
