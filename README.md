@@ -145,10 +145,11 @@ SW6 = on    \ 400 pulsos por revolução
 SW7 = on    /
 SW8 = on  -/
 
+Ligações do pinos do Driver ao STM32
 PUL+, DIR+ e ENA+ ligado ao 5VDC
 PA8  = PUL-
 PA9  = DIR-
-Pa10 = ENA- 
+PA10 = ENA- 
 
 
 
