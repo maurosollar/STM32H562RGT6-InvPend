@@ -108,10 +108,14 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  HAL_GPIO_WritePin(PUL_GPIO_Port, PUL_Pin, 1);
+  HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 0);
+  HAL_GPIO_WritePin(ENA_GPIO_Port, ENA_Pin, 1);
+
   while (1)
   {
-
-    HAL_Delay(100);
+	HAL_GPIO_TogglePin(PUL_GPIO_Port, PUL_Pin);
+    HAL_Delay(1);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -275,11 +279,11 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, PUL_Pin|DIR_Pin|ENA_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PA8 PA9 PA10 */
-  GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  /*Configure GPIO pins : PUL_Pin DIR_Pin ENA_Pin */
+  GPIO_InitStruct.Pin = PUL_Pin|DIR_Pin|ENA_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);

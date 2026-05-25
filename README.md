@@ -82,6 +82,14 @@ Pinout & Configuration / Timers
         GPIO pull-up/Pull-down: Pull-up
         
         
+=== Configurar GPIO's de saída para PUL-, DIR- e ENA- ===
+Pinout & Configuration
+  PA8, PA9 e PA10 como GPIO_Output
+  PA8 com label: PUL
+  PA9 com label: DIR
+  PA10 com label: ENA
+  GPIO mode: Output Open Drain (Configurado assim pelo fato do PUL+, DIR+ e ENA+
+                                esta conectado no 5VDC)
 
 ```
 
