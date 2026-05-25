@@ -89,13 +89,13 @@ Pinout & Configuration / Timers
 
 ```
 
-
-- Shiel F.G - GND --------- GND
-- Brown ----- Vdc 5 a 24V - 5V
-- Blue ------ OV ---------- GND
-- Black ----- Out A phase - PA0
-- White ----- Out B phase - PA1
-- Orange ---- Out Z phase - Não conectado
+  Conexão do Encoder ------  STM32 -------
+- Shiel F.G - GND ---------  GND
+- Brown ----- Vdc 5 a 24V -  5V
+- Blue ------ OV ----------  GND
+- Black ----- Out A phase -  PA0
+- White ----- Out B phase -  PA1
+- Orange ---- Out Z phase -  Não conectado
 
 Obs.: Out Z phase -> Gera 1 pulso por revolução. (Não utilizei)
       Se o canal A muda antes do B -> gira em um sentido.
@@ -146,6 +146,7 @@ SW8 = on  -/
 
 Ligações do pinos do Driver ao STM32
 PUL+, DIR+ e ENA+ ligado ao 5VDC
+
 PA8  = PUL-
 PA9  = DIR-
 PA10 = ENA- 
