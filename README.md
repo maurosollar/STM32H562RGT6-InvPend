@@ -108,9 +108,10 @@ Obs.: Out Z phase -> Gera 1 pulso por revolução. (Não utilizei)
 
 ### Conexão do driver do motor de passo DM556 c/ Motor de passo 57HS112-3004A08-D21
 
-O drive tem um bloco de chaves dip switch, para descrição de cada um, veja imagem acima. 
+O driver tem um bloco de chaves com 8 dip switch, para descrição de cada um, veja imagem do driver acima. 
 Adicionei esta tabela abaixo em função da figura não ter RMS, mas pode ser calculada assim (Peak = RMS * 1.4)
 A corrente que vem estipulada no motor é RMS, no caso 3A, selecionei 2.7A RMS, um pouco abaixo da corrente do motor.
+
 ```
 
 +-------------+
@@ -135,9 +136,12 @@ Ficou assim:
 SW1 = on  -\
 SW2 = on   +--> Corrente RMS 2.7A
 SW3 = off -/
-SW4 = off = Half Current (Quando motor tiver parado, é energizado com meia corrente)
+
+SW4 = off = Half Current (Quando motor tiver parado, é energizado com meia corrente,
+            salvo se ENA estiver desativado, neste caso o motor roda livre)
+
 SW5 = off -\
-SW6 = on    \ 400 pulsos por revolução (testar e depois fazer os cálculos.)
+SW6 = on    \ 400 pulsos por revolução
 SW7 = on    /
 SW8 = on  -/
 
