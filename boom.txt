@@ -27,14 +27,12 @@ Material + estimativa de valor em 05/2026
 
 1 - R$055,00 - lcd tft ST7789 de 240x240 1.54 polegadas com botão codificador rotativo ec11
 
-1 - R$120,99 - Nema 23 motor de passo 20-50v dc motores 1.2nm 57HS56mm axie 8mm 688,9g
-               Step angle: 1.8°+-5% / Phase No.: 2 / Insulation resistance: 100(550V DC)
-               Insulation class: B / Holding torque: 12kg.cm / 1.2nm / Tensão Nominal: 3,9V
-               Corrente por fase: 3A / Resistência por fase = 1,3 (+-10%) ohms 
-               Indutância por fase = 6,5 (+-20%) mH / Torque: 3 N.m (30kgf.cm)
-               Temperatura ambiente: -20ºC ~ 50ºC /  Quantidade de cabos: 4
-               Comprimento do Motor = 112mm /  Diâmetro do Eixo = 8mm
-               Peso: 1,7Kg 
+1 - R$120,99 - Nema 23 motor de passo 57HS56-3004A08-D21
+               Step angle: 1.8°+-5% / Phase No.: 2
+               Holding torque: 12kg.cm / 1.2nm
+               Corrente por fase: 3A / Resistência por fase = 0,95 (+-10%) ohms 
+               Indutância por fase = 2,8 (+-20%) mH
+               Diâmetro do Eixo = 8mm
 
 1 - R$133,00 - Driver DM556 motor de passo
 

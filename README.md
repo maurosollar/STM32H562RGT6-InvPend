@@ -15,7 +15,7 @@ Projeto de controle de pêndulo invertido utilizando STM32H562RGT6.
     <img src="Docs/STM32H562RGT6.png" width="200">
     <img src="Docs/DM556.png" width="200">
     <img src="Docs/Encoder_Incremental.png" width="200">
-    <img src="Docs/Motor_Passo_Nema23.png" width="200">    
+    <img src="Docs/Nema23_Step_Motor.png" width="200">    
 </p>
 
 ### Início da separação dos materiais
@@ -113,7 +113,7 @@ Obs.: Out Z phase -> Gera 1 pulso por revolução. (Não utilizei)
 
 ```
 
-### Configuração do driver do motor de passo DM556 para o Motor de passo 57HS112-3004A08-D21
+### Configuração do driver do motor de passo DM556 para o Motor de passo 57HS56-3004A08-D21
 
 O driver tem um bloco de chaves com 8 dip switch, para descrição de cada um, veja imagem do driver acima. 
 Adicionei esta tabela abaixo em função da figura não ter RMS, mas pode ser calculada assim (Peak = RMS * 1.4)
