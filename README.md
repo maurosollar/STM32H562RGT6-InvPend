@@ -1,6 +1,33 @@
-# STM32H562RGT6 - Pêndulo invertido
+# Pêndulo invertido
 
-Projeto de controle de pêndulo invertido utilizando STM32H562RGT6.
+Projeto experimental de um sistema de pêndulo invertido utilizando STM32H562RGT6, driver DM556 e motor de passo para estudo de controle PID e LQR. O objetivo é desenvolver uma plataforma open-source para estudos de sistemas instáveis.
+
+## Estratégia de Controle
+
+O projeto utiliza duas etapas principais de controle:
+
+### Swing-Up
+
+Responsável por elevar o pêndulo da posição inferior até próximo da vertical,
+através do controle da energia do sistema.
+
+O algoritmo aplica acelerações controladas no carrinho para aumentar
+gradualmente a energia do pêndulo até atingir a região de captura.
+
+### Estabilização
+
+Após atingir a região próxima da vertical, o sistema troca automaticamente
+para o controlador de estabilização.
+
+Controladores previstos:
+
+- PID
+- LQR
+- Controle em espaço de estados
+
+A transição entre Swing-Up e estabilização ocorre automaticamente
+baseada no ângulo do pêndulo.
+
 
 ## Documentação
 
