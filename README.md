@@ -23,7 +23,6 @@ Controladores previstos:
 
 - PID
 - LQR
-- Controle em espaço de estados
 
 A transição entre Swing-Up e estabilização ocorre automaticamente
 baseada no ângulo do pêndulo.
