@@ -76,11 +76,18 @@ Start My project from MCU
       RCC
         HSE: Crystal/Ceramic Resonator
         LSE: Crystal/Ceramic Resonator
+
+    Trace and Debug
+      DEBUG Mode and Copnfiguration
+        Debug: Serial Wire        
         
   Aba Clock Configuration
     Input frequency LSE: 32.768KHz
     Input frequency HSE: 8MHz
     HCLK(MHz): 250
+    Importante observar se o clock da USB esta a 48MHz, já que vamos utilizar
+    a USB como Virtual Port Communications. Já Certo que estamos utilizando
+    HSE e LSE ativado para utilizar Cristal externo.
     
     
 === Parte do encoder ===
@@ -110,14 +117,47 @@ Pinout & Configuration / Timers
         
 === Configurar GPIO's de saída para PUL-, DIR- e ENA- ===
 Pinout & Configuration
-  PA8, PA9 e PA10 como GPIO_Output
-  PA8 com label: PUL
+  PA7, PA9 e PA10 como GPIO_Output
+  PA7 com label: PUL
   PA9 com label: DIR
   PA10 com label: ENA
   GPIO mode: Output Open Drain (Configurado como coletor aberto pelo fato do PUL+, DIR+ e ENA+
                                 esta conectado no 5VDC)
 
+=== Configurando a USB CDC ===
+https://community.st.com/t5/stm32-mcus/how-to-implement-a-usb-device-composite-in-stm32h5/ta-p/708078
+https://github.com/STMicroelectronics/stm32-mw-usb-device
+Antes vá em Help do CubeMX "Manage Embedded Software Packages"
+Collapse o > STM32H5
+[*] STM32Cube MCU Package for STM32H5 Series
+Click em "Refresh" caso instalado ou click em "Install"
+
+
+Pinout & Configuration
+  Connectivity
+    USB Mode and Configuration
+    Mode
+      Mode: Device_Only
+    Configuration
+      Parameter Settings
+        Manter sem alterações
+      NVIC Settings
+        USB FS global interrupt (*)
+        
+Project Manager
+  Linker Settings
+    Minimum Heap Size: 0x600
+    Minimum Stack Size: 0x800
+  Advanced Settings
+    Marcar a opção [*] "Do Not Generate Function Call" na linha do 
+    "Function Name" MX_USB_PCD_Init
+
+
 ```
+
+
+
+
 
 ### Conexão do encoder rotativo OMCH 2500PR, Optoelectronic, E6B2-CWZ6C
 
@@ -138,6 +178,10 @@ Obs.: Out Z phase -> Gera 1 pulso por revolução. (Não utilizei)
       Maximum response frequency: 100KHz
 
 ```
+
+
+
+
 
 ### Configuração do driver do motor de passo DM556 para o Motor de passo 57HS56-3004A08-D21
 
@@ -179,7 +223,7 @@ SW7 = on    /
 SW8 = on  -/
 
 Ligações GPIOs do STM32 ao Driver. Obs.:(PUL+, DIR+ e ENA+ ligado ao 5VDC)
-PA8  = PUL-
+PA7  = PUL-
 PA9  = DIR-
 PA10 = ENA- 
 
