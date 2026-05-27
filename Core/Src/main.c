@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
 
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -65,7 +66,7 @@ static void MX_TIM2_Init(void);
 /* USER CODE BEGIN 0 */
 
 int32_t val_encoder = 0;
-
+extern UX_SLAVE_CLASS_CDC_ACM *cdc_acm;
 
 /* USER CODE END 0 */
 
@@ -115,6 +116,7 @@ int main(void)
   HAL_GPIO_WritePin(PUL_GPIO_Port, PUL_Pin, 1);
   HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 0);
   HAL_GPIO_WritePin(ENA_GPIO_Port, ENA_Pin, 1);
+
 
   while (1)
   {
