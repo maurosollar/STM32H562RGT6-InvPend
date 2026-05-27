@@ -126,6 +126,7 @@ Pinout & Configuration
 
 === Configurando a USB CDC ===
 https://community.st.com/t5/stm32-mcus/how-to-implement-a-usb-device-composite-in-stm32h5/ta-p/708078
+https://community.st.com/t5/stm32-mcus/how-to-use-stmicroelectronics-classic-usb-device-middleware-with/ta-p/599274
 https://github.com/STMicroelectronics/stm32-mw-usb-device
 Antes vá em Help do CubeMX "Manage Embedded Software Packages"
 Collapse o > STM32H5
@@ -143,15 +144,42 @@ Pinout & Configuration
         Manter sem alterações
       NVIC Settings
         USB FS global interrupt (*)
-        
+  Middleware and Software Packs
+  USBX
+    USBX Mode and Configuration
+    Mode
+      [*] Core System
+      UX Device FS
+        [*] Device CoreStack FS
+        [*] Device Controllers FS
+        Device Class FS
+          [*] CDC ACM  (Abstract Control Model) É a classe genérica de comunicação USB.
+    Configuration
+      USBX
+        Core Utilities
+          USBX System Stack Size: 10*1024
+        Memory Configuration
+          USBX memory pool size: 15*1024
+      Platform Settings
+      Found Solutions: USB
+  System Core
+    RCC
+      CRS SYNC: CRS SYNC Source USB     
+      Select CRS SYNC (Clock Recovery System) allows the auto calibration
+      of the HSI48 clock using the USB SOF packet as sync source, this is
+      needed to guarantee correct USB clock accuracy  
+  
 Project Manager
   Linker Settings
-    Minimum Heap Size: 0x600
-    Minimum Stack Size: 0x800
+    Minimum Heap Size: 0x600 Verificar necessidade
+    Minimum Stack Size: 0x800 Verificar necessidade
   Advanced Settings
-    Marcar a opção [*] "Do Not Generate Function Call" na linha do 
-    "Function Name" MX_USB_PCD_Init
-
+    Marcar a opção 
+    [*] "Do Not Generate Function Call" na linha do 
+    "Function Name" MX_USB_PCD_Init e desmarcar [*] Visibility (Static)
+    We need this config as MX_USBPCD_Init() will be called from the USB
+    application user code instead of main.c
+    
 
 ```
 
