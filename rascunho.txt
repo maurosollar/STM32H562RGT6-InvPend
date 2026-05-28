@@ -54,3 +54,8 @@ Project Manager
     We need this config as MX_USBPCD_Init() will be called from the USB
     application user code instead of main.c
     
+    
+    uint8_t recebe;
+    HAL_UART_Receive(&huart4, &recebe, 1, 1000);
+    HAL_UART_Transmit(&huart4, &recebe, 1, 100);
+    

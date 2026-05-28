@@ -49,6 +49,9 @@ UART_HandleTypeDef huart4;
 
 /* USER CODE BEGIN PV */
 
+uint8_t recebe;
+int32_t val_encoder;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -64,8 +67,6 @@ static void MX_UART4_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-int32_t val_encoder = 0;
 
 /* USER CODE END 0 */
 
@@ -105,7 +106,6 @@ int main(void)
   MX_TIM2_Init();
   MX_UART4_Init();
   /* USER CODE BEGIN 2 */
-
   HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
   TIM2->CNT = 1000000;
 
@@ -121,12 +121,14 @@ int main(void)
   while (1)
   {
 	HAL_GPIO_TogglePin(PUL_GPIO_Port, PUL_Pin);
-    HAL_Delay(500);
+    HAL_Delay(100);
 
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    HAL_UART_Transmit(&huart4, "Mauro", 5, 100);
+    HAL_UART_Receive(&huart4, &recebe, 1, 100);
+    HAL_UART_Transmit(&huart4, &recebe, 1, 100);
+    val_encoder = TIM2->CNT;
 
   }
   /* USER CODE END 3 */
