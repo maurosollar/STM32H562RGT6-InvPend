@@ -49,7 +49,7 @@ UART_HandleTypeDef huart4;
 
 /* USER CODE BEGIN PV */
 
-uint8_t recebe;
+char envia[20];
 int32_t val_encoder;
 
 /* USER CODE END PV */
@@ -122,13 +122,13 @@ int main(void)
   {
 	HAL_GPIO_TogglePin(PUL_GPIO_Port, PUL_Pin);
     HAL_Delay(100);
-
+    val_encoder = TIM2->CNT;
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    HAL_UART_Receive(&huart4, &recebe, 1, 100);
-    HAL_UART_Transmit(&huart4, &recebe, 1, 100);
-    val_encoder = TIM2->CNT;
+    sprintf(envia, "X:%lu\r\n", val_encoder);
+    HAL_UART_Transmit(&huart4, (uint8_t *)envia, strlen(envia), 100);
+
 
   }
   /* USER CODE END 3 */
