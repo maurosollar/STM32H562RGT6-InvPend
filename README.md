@@ -236,3 +236,7 @@ PA10 = ENA-
 
 
 ```   
+
+Algumas observações: Para fazer um Debugger gráfico, ativar em Debug Configuration, e habilite a opção Serial Wire Viewer e ok. 
+Logo depois vá no Menu Windows / show View / SWV Data Trace Timeline Graph
+Clique no botão "Configure Trace", no quadro data trace / Comparator 0 (*) enable e adicione a variável a ser comparada.
