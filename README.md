@@ -142,7 +142,7 @@ Pinout & Configuration
         DMA Settings
           Clique em "Go to GPDMA1"
 
-Logo clicando em "Go to GPDMA1"
+Logo clicando em "Go to GPDMA1" redireciona para o System Core
 System Core
    GPDMA1
      Channel 0 -2 Words Internal FIFO : Standarda Request mode

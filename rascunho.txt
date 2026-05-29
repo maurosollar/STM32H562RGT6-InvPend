@@ -64,5 +64,8 @@ Project Manager
     sprintf(envia, "X:%lu\r\n", val_encoder);
     HAL_UART_Transmit(&huart4, (uint8_t *)envia, strlen(envia), 100);
     HAL_UART_Transmit(&huart4, "12345678", 8, 10);
+    
+    memcpy(tx_buffer, "Ola STM32 DMA.....\r\n", 20);
+    HAL_GPIO_TogglePin(PUL_GPIO_Port, PUL_Pin);
         
     

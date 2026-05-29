@@ -55,8 +55,20 @@ uint8_t rx_buffer[3];
 char tx_buffer[20];
 int32_t val_encoder;
 float Kp = 0.0, Ki = 0.0, Kd = 0.0;
-uint8_t x, y;
+uint8_t x, y, z;
 volatile uint8_t uart_tx_busy = 0;
+uint32_t excede_envio, tempo;
+
+typedef enum
+{
+    AUTOTESTE = 0,
+    WINGUP,
+    CONTROLE,
+    ERRO
+
+} Estado_t;
+
+Estado_t estado_pendulo;
 
 /* USER CODE END PV */
 
@@ -100,7 +112,7 @@ void Inicia_GPIOs()
 	HAL_GPIO_WritePin(ENA_GPIO_Port, ENA_Pin, 1); // 1 = Habilitado / 0 = desabilitado
 }
 
-void Expira_buffer()
+void Expira_rx_buffer()
 {
 	if((HAL_GetTick() - last_rx_time) > 1000 && rx_buffer[0] > 0) // > 1 seg limpa buffer
 	{
@@ -116,6 +128,19 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 	if(huart->Instance == UART4)
 	{
 		uart_tx_busy = 0;
+	}
+}
+
+
+void Envia_simulador()
+{
+	if(uart_tx_busy == 0)
+	{
+		uart_tx_busy = 1;
+		sprintf((char*)tx_buffer, ">>>>>>>ENC:%ld\r\n", val_encoder);
+		HAL_UART_Transmit_DMA(&huart4, (uint8_t*)tx_buffer, 20);
+	} else {
+		excede_envio++;
 	}
 }
 
@@ -159,7 +184,7 @@ int main(void)
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
-  TIM2->CNT = 1000000;  // iniciado com este valor somente para ficar mais fácil de analisar
+  TIM2->CNT = 100000;  // iniciado com este valor para melhor analisar
 
   /* USER CODE END 2 */
 
@@ -171,23 +196,23 @@ int main(void)
   // Ao preencher o buffer, gera uma interrupção chamando o callback acima
   HAL_UART_Receive_IT(&huart4, rx_buffer, 3); // Agenda a interrupção após preencher o 3 byte
 
+  estado_pendulo = AUTOTESTE;
+
   while (1)
   {
-	HAL_GPIO_TogglePin(PUL_GPIO_Port, PUL_Pin);
-    HAL_Delay(500);
+
     val_encoder = TIM2->CNT;
+    val_encoder = val_encoder>>1;
+    for (tempo = 0; tempo < 4000; ++tempo) {
+    	z++;
+    }
 
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    Expira_buffer();
-    //memcpy(tx_buffer, "Ola STM32 DMA.....\r\n", 20);
-    if(uart_tx_busy == 0)
-    {
-    	uart_tx_busy = 1;
-        sprintf((char*)tx_buffer, ">>>>>>>ENC:%ld\r\n", val_encoder);
-        HAL_UART_Transmit_DMA(&huart4, (uint8_t*)tx_buffer, 20);
-    }
+    Expira_rx_buffer();
+    Envia_simulador();
+
 
 
 
