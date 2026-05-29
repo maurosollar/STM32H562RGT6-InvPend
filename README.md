@@ -123,6 +123,9 @@ Pinout & Configuration
   PA10 com label: ENA
   GPIO mode: Output Open Drain (Configurado como coletor aberto pelo fato do PUL+, DIR+ e ENA+
                                 esta conectado no 5VDC)
+  PA4 com label: Encoder_Rev como GPIO_Input Pull-up (Não utilizado)
+  PB13 com label: Time_Int como GPIO_Output (Utilizado para debug de tempo de interrupção)
+  PC11 com label: Time_Exec como GPIO_Output (Utilizado para debug de tempo de execuçao de código)
 
 === Configuração da UART ===
 Pinout & Configuration
@@ -156,8 +159,24 @@ System Core
        Destination Data Setting
          Destination Address increment After Transfer: Disable
          Data Width: Byte
-      
 Obs.: Foram ativados PA12=UART4_TX e PA11=UART4_RX
+
+=== Configurando Timer para interrupção por software de 1 ms ===
+Pinout & Configuration
+  Timers
+    TIM3
+      Mode
+        Clock Source: Internal Clock (Na árvore de clock APB1 Timer clock = 250MHz
+      Configuration
+        Parameters Settings
+          Prescaler (PSC - 16 bits value): 250-1 (Então o timer incrementa a cada 1 MHZ)
+          Counter Period: 1000-1 ( 1us * 1000 = 1ms)
+        NVIC Settings
+          TIM3 global interrupt (*)
+        
+        
+          
+      
       
 ```
 
