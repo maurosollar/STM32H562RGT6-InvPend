@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
 #include "string.h"
+#include "stdlib.h"
 
 /* USER CODE END Includes */
 
@@ -46,11 +47,16 @@
 TIM_HandleTypeDef htim2;
 
 UART_HandleTypeDef huart4;
+DMA_HandleTypeDef handle_GPDMA1_Channel0;
 
 /* USER CODE BEGIN PV */
-
-char envia[20];
+uint32_t last_rx_time = 0;
+uint8_t rx_buffer[3];
+char tx_buffer[20];
 int32_t val_encoder;
+float Kp = 0.0, Ki = 0.0, Kd = 0.0;
+uint8_t x, y;
+volatile uint8_t uart_tx_busy = 0;
 
 /* USER CODE END PV */
 
@@ -58,15 +64,60 @@ int32_t val_encoder;
 void SystemClock_Config(void);
 static void MPU_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_GPDMA1_Init(void);
 static void MX_ICACHE_Init(void);
-static void MX_TIM2_Init(void);
 static void MX_UART4_Init(void);
+static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+
+	if(huart->Instance == UART4)
+	{
+		last_rx_time = HAL_GetTick();
+
+        Kp = (float) rx_buffer[0] / 100;
+        Ki = (float) rx_buffer[1] / 100;
+        Kd = (float) rx_buffer[2] / 100;
+
+        x++;
+        //HAL_UART_AbortReceive_IT(&huart4);
+		HAL_UART_Receive_IT(&huart4, rx_buffer, 3);
+	}
+
+}
+
+void Inicia_GPIOs()
+{
+	HAL_GPIO_WritePin(PUL_GPIO_Port, PUL_Pin, 0); // Iniciando com nível 0
+	HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 0); // 0 = Anti-horário / 1 = Horário
+	HAL_GPIO_WritePin(ENA_GPIO_Port, ENA_Pin, 1); // 1 = Habilitado / 0 = desabilitado
+}
+
+void Expira_buffer()
+{
+	if((HAL_GetTick() - last_rx_time) > 1000 && rx_buffer[0] > 0) // > 1 seg limpa buffer
+	{
+		memset(rx_buffer, 0, sizeof(rx_buffer));
+		HAL_UART_AbortReceive_IT(&huart4); // Começa
+		HAL_UART_Receive_IT(&huart4, rx_buffer, 3);
+		y++;
+	}
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+	if(huart->Instance == UART4)
+	{
+		uart_tx_busy = 0;
+	}
+}
 
 /* USER CODE END 0 */
 
@@ -102,32 +153,42 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_GPDMA1_Init();
   MX_ICACHE_Init();
-  MX_TIM2_Init();
   MX_UART4_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
-  TIM2->CNT = 1000000;
+  TIM2->CNT = 1000000;  // iniciado com este valor somente para ficar mais fácil de analisar
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  HAL_GPIO_WritePin(PUL_GPIO_Port, PUL_Pin, 1);
-  HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 0);
-  HAL_GPIO_WritePin(ENA_GPIO_Port, ENA_Pin, 1);
+  Inicia_GPIOs();
 
+  // Buffer recebe os coeficientes Kp, Ki e Kd da UART
+  // Ao preencher o buffer, gera uma interrupção chamando o callback acima
+  HAL_UART_Receive_IT(&huart4, rx_buffer, 3); // Agenda a interrupção após preencher o 3 byte
 
   while (1)
   {
 	HAL_GPIO_TogglePin(PUL_GPIO_Port, PUL_Pin);
-    HAL_Delay(100);
+    HAL_Delay(500);
     val_encoder = TIM2->CNT;
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    sprintf(envia, "X:%lu\r\n", val_encoder);
-    HAL_UART_Transmit(&huart4, (uint8_t *)envia, strlen(envia), 100);
+    Expira_buffer();
+    //memcpy(tx_buffer, "Ola STM32 DMA.....\r\n", 20);
+    if(uart_tx_busy == 0)
+    {
+    	uart_tx_busy = 1;
+        sprintf((char*)tx_buffer, ">>>>>>>ENC:%ld\r\n", val_encoder);
+        HAL_UART_Transmit_DMA(&huart4, (uint8_t*)tx_buffer, 20);
+    }
+
 
 
   }
@@ -189,6 +250,34 @@ void SystemClock_Config(void)
   /** Configure the programming delay
   */
   __HAL_FLASH_SET_PROGRAM_DELAY(FLASH_PROGRAMMING_DELAY_2);
+}
+
+/**
+  * @brief GPDMA1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_GPDMA1_Init(void)
+{
+
+  /* USER CODE BEGIN GPDMA1_Init 0 */
+
+  /* USER CODE END GPDMA1_Init 0 */
+
+  /* Peripheral clock enable */
+  __HAL_RCC_GPDMA1_CLK_ENABLE();
+
+  /* GPDMA1 interrupt Init */
+    HAL_NVIC_SetPriority(GPDMA1_Channel0_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(GPDMA1_Channel0_IRQn);
+
+  /* USER CODE BEGIN GPDMA1_Init 1 */
+
+  /* USER CODE END GPDMA1_Init 1 */
+  /* USER CODE BEGIN GPDMA1_Init 2 */
+
+  /* USER CODE END GPDMA1_Init 2 */
+
 }
 
 /**
@@ -288,7 +377,7 @@ static void MX_UART4_Init(void)
 
   /* USER CODE END UART4_Init 1 */
   huart4.Instance = UART4;
-  huart4.Init.BaudRate = 115200;
+  huart4.Init.BaudRate = 460800;
   huart4.Init.WordLength = UART_WORDLENGTH_8B;
   huart4.Init.StopBits = UART_STOPBITS_1;
   huart4.Init.Parity = UART_PARITY_NONE;

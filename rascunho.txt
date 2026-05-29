@@ -63,5 +63,6 @@ Project Manager
     int32_t val_encoder;    
     sprintf(envia, "X:%lu\r\n", val_encoder);
     HAL_UART_Transmit(&huart4, (uint8_t *)envia, strlen(envia), 100);
+    HAL_UART_Transmit(&huart4, "12345678", 8, 10);
         
     

@@ -137,6 +137,26 @@ Pinout & Configuration
           Word Length: 8 Bits
           Parity: None
           Stop Bits: 1
+        NVIC Settings
+          UART4 global interrupt [*]
+        DMA Settings
+          Clique em "Go to GPDMA1"
+
+Logo clicando em "Go to GPDMA1"
+System Core
+   GPDMA1
+     Channel 0 -2 Words Internal FIFO : Standarda Request mode
+       Request Configuration
+         Request UART4_TX
+       Channel configuration
+         Direction Memory to Peripheral
+       Source Data Setting
+         Source Address increment After Transfer: Enabled
+         Data Width: Byte
+       Destination Data Setting
+         Destination Address increment After Transfer: Disable
+         Data Width: Byte
+      
 Obs.: Foram ativados PA12=UART4_TX e PA11=UART4_RX
       
 ```
