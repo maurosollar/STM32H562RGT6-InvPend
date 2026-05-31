@@ -23,6 +23,8 @@ typedef enum
 typedef struct
 {
     volatile uint32_t encoder;
+    volatile uint8_t chave_esq;
+    volatile uint8_t chave_dir;
 
     float angulo;
     float velocidade;

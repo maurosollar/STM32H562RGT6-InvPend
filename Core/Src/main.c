@@ -56,11 +56,9 @@ DMA_HandleTypeDef handle_GPDMA1_Channel0;
 uint32_t  last_rx_time = 0;
 uint8_t   rx_buffer[3];
 char      tx_buffer[20];
-int32_t   val_encoder, excede_envio;
+int32_t   excede_envio;
 
 volatile uint8_t uart_tx_busy = 0, flag_controle = 0;
-
-uint8_t chave_esq, chave_dir;
 
 Pendulo_t pendulo;
 
@@ -122,7 +120,7 @@ void Envia_simulador() // Envia dados para o simulador
 	if(uart_tx_busy == 0)
 	{
 		uart_tx_busy = 1;
-		sprintf((char*)tx_buffer, ">>>>>>>ENC:%ld\r\n", val_encoder);
+		sprintf((char*)tx_buffer, ">>>>>>>ENC:%ld\r\n", pendulo.encoder);
 		HAL_UART_Transmit_DMA(&huart4, (uint8_t*)tx_buffer, 20);
 	} else {
 		excede_envio++;
@@ -137,8 +135,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	    flag_controle = 1;
 	    Expira_rx_Buffer_Simulador();
 	    Envia_simulador();
-	    chave_dir = HAL_GPIO_ReadPin(Chave_Dir_GPIO_Port, Chave_Dir_Pin);
-	    chave_esq = HAL_GPIO_ReadPin(Chave_Esq_GPIO_Port, Chave_Esq_Pin);
+	    pendulo.encoder = TIM2->CNT;
+	    pendulo.chave_dir = HAL_GPIO_ReadPin(Chave_Dir_GPIO_Port, Chave_Dir_Pin);
+	    pendulo.chave_esq = HAL_GPIO_ReadPin(Chave_Esq_GPIO_Port, Chave_Esq_Pin);
 
 	}
 }
@@ -203,7 +202,11 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  HAL_Delay(500);
+  HAL_Delay(1000);
+
+  HAL_TIM_PWM_Stop(&htim5, TIM_CHANNEL_3);
+  TIM5->CNT = 0;
+
   Pendulo_Inicializa(&pendulo);
 
   while (1)

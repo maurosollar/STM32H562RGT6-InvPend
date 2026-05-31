@@ -79,7 +79,7 @@ void atraso_us(uint32_t us)
       
       
 Parar o motor, parar a contagem do CNT do TIM5 para não gerar PWM
-HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_3);
+HAL_TIM_PWM_Stop(&htim5, TIM_CHANNEL_3);
 TIM5->CNT = 0;
 
 Ou
