@@ -8,15 +8,14 @@ O projeto utiliza duas etapas principais de controle:
 
 ### Swing-Up
 
-Responsável por elevar o pêndulo da posição inferior até próximo da vertical,
-através do controle da energia do sistema.
+Responsável por elevar o pêndulo da posição inferior até próximo da vertical.
 
 O algoritmo aplica acelerações controladas no carrinho para aumentar
 gradualmente a energia do pêndulo até atingir a região de captura.
 
 ### Estabilização
 
-Após atingir a região próxima da vertical, o sistema troca automaticamente
+Após atingir a região próxima da vertical de captura, o sistema troca automaticamente
 para o controlador de estabilização.
 
 Controladores previstos:
@@ -117,13 +116,15 @@ Pinout & Configuration / Timers
         
 === Configurar GPIO's de saída para PUL-, DIR- e ENA- ===
 Pinout & Configuration
-  PA7, PA9 e PA10 como GPIO_Output
-  PA7 com label: PUL
+  Obs.: PUL- = PA2 associado com TIM5_CH3 PWM Generation
+  PA9 e PA10 como GPIO_Output
   PA9 com label: DIR
   PA10 com label: ENA
   GPIO mode: Output Open Drain (Configurado como coletor aberto pelo fato do PUL+, DIR+ e ENA+
                                 esta conectado no 5VDC)
   PA4 com label: Encoder_Rev como GPIO_Input Pull-up (Não utilizado)
+  PA6 com label: Chave_Esq como GPIO_Input Pull-up
+  PA7 com label: Chave_Dir como GPIO_Input Pull-up
   PB13 com label: Time_Int como GPIO_Output (Utilizado para debug de tempo de interrupção)
   PC11 com label: Time_Exec como GPIO_Output (Utilizado para debug de tempo de execuçao de código)
 
@@ -174,7 +175,37 @@ Pinout & Configuration
         NVIC Settings
           TIM3 global interrupt (*)
         
-        
+=== Configurando PWM variável para controle de pulsos do driver do motor de passo ===
+Pinout & Configuration
+  Timers
+    TIM5
+      Mode
+        Clock Source: Internal Clock (Na árvore de clock APB1 Timer clock = 250MHz
+        Channel1: PWM Generation CH1  (PA2 - TIM4_CH3 = PUL do driver motor de passo)
+      Configuration
+        Parameters Settings
+          Counter Settings
+            Prescaler (PSC - 16 bits value): 250-1 (Então o timer incrementa a cada 1 MHZ)
+            Counter Period: 1000-1 ( 1us * 1000 = 1ms)
+            auto-reload preload: Enable ( o valor colocado no ARR via software prevalecerá na próxima contagem)
+            Obs.: FreqPWM = clktim / (prescaler * ARR) no caso acima = 1KHz
+                  Counter Period será alterado no software
+                                 Freq = ARR e      CCR3(Counter Period) sempre a metade.    
+                  Assim temos:   1Hz  = 1000000
+                                 1KHz = 1000
+                                 2KHz = 500 Motor estável
+                               2.5KHz = 400 Motor já não aceita alterações bruscas de velocidade
+                                 5KHz = 200 
+                                 
+          PWM Generation Channel
+            Pulse (16 bit value): 500 (Será laterado no software, sempre a metado do Counter Period)
+                                      Para que o duty cycle do PWD seja 50%
+            Fast Mode: Enable
+        GPIO Settings
+          GPIO mode: Alternate Function Open Drain
+          Maximum output speed: High
+          
+     
           
       
       

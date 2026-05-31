@@ -24,6 +24,7 @@
 #include "stdio.h"
 #include "string.h"
 #include "stdlib.h"
+#include "penduloinvertido.h"
 
 /* USER CODE END Includes */
 
@@ -46,6 +47,7 @@
 
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim5;
 
 UART_HandleTypeDef huart4;
 DMA_HandleTypeDef handle_GPDMA1_Channel0;
@@ -54,23 +56,13 @@ DMA_HandleTypeDef handle_GPDMA1_Channel0;
 uint32_t  last_rx_time = 0;
 uint8_t   rx_buffer[3];
 char      tx_buffer[20];
-int32_t   val_encoder;
-float     Kp = 0.0, Ki = 0.0, Kd = 0.0;
-uint8_t   x, y, z;
-uint32_t  excede_envio, tempo;
+int32_t   val_encoder, excede_envio;
 
-volatile uint8_t uart_tx_busy = 0;
+volatile uint8_t uart_tx_busy = 0, flag_controle = 0;
 
-typedef enum
-{
-    AUTOTESTE = 0,
-    WINGUP,
-    CONTROLE,
-    ERRO
+uint8_t chave_esq, chave_dir;
 
-} Estado_t;
-
-Estado_t estado_pendulo;
+Pendulo_t pendulo;
 
 /* USER CODE END PV */
 
@@ -83,6 +75,7 @@ static void MX_ICACHE_Init(void);
 static void MX_UART4_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_TIM5_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -90,57 +83,44 @@ static void MX_TIM3_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) // Callback da UART com buffer completo
 {
 
 	if(huart->Instance == UART4)
 	{
 		last_rx_time = HAL_GetTick();
-
-        Kp = (float) rx_buffer[0] / 100;
-        Ki = (float) rx_buffer[1] / 100;
-        Kd = (float) rx_buffer[2] / 100;
-
+        Pendulo_SetaPID(&pendulo, (float) rx_buffer[0] / 100,
+        		                 (float) rx_buffer[1] / 100,
+								 (float) rx_buffer[2] / 100);
 		HAL_UART_Receive_IT(&huart4, rx_buffer, 3);
 	}
 
 }
 
-void Inicia_GPIOs()
-{
-	HAL_GPIO_WritePin(PUL_GPIO_Port, PUL_Pin, 0); // Iniciando com nível 0
-	HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 0); // 0 = Anti-horário / 1 = Horário
-	HAL_GPIO_WritePin(ENA_GPIO_Port, ENA_Pin, 1); // 1 = Habilitado / 0 = desabilitado
-	HAL_GPIO_WritePin(Int_Control_GPIO_Port, Int_Control_Pin, 0);
-	HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 0);
 
-}
-
-void Expira_rx_buffer()
+void Expira_rx_Buffer_Simulador()
 {
 	if((HAL_GetTick() - last_rx_time) > 1000 && rx_buffer[0] > 0) // > 1 seg limpa buffer
 	{
 		memset(rx_buffer, 0, sizeof(rx_buffer));
-		HAL_UART_AbortReceive_IT(&huart4); // Começa
+		HAL_UART_AbortReceive_IT(&huart4);
 		HAL_UART_Receive_IT(&huart4, rx_buffer, 3);
 	}
 }
 
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) // Seta variável uart_tx_busy = 0 sinalizando que acabou a transmissão
 {
 	if(huart->Instance == UART4)
 	{
 		uart_tx_busy = 0;
-		HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 0);
 	}
 }
 
 
-void Envia_simulador()
+void Envia_simulador() // Envia dados para o simulador
 {
 	if(uart_tx_busy == 0)
 	{
-		HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 1);
 		uart_tx_busy = 1;
 		sprintf((char*)tx_buffer, ">>>>>>>ENC:%ld\r\n", val_encoder);
 		HAL_UART_Transmit_DMA(&huart4, (uint8_t*)tx_buffer, 20);
@@ -154,11 +134,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim == &htim3)
 	{
-		HAL_GPIO_WritePin(Int_Control_GPIO_Port, Int_Control_Pin, 1);
-	    for (tempo = 0; tempo < 4000; ++tempo) {
-	    	z++;
-	    }
-		HAL_GPIO_WritePin(Int_Control_GPIO_Port, Int_Control_Pin, 0);
+	    flag_controle = 1;
+	    Expira_rx_Buffer_Simulador();
+	    Envia_simulador();
+	    chave_dir = HAL_GPIO_ReadPin(Chave_Dir_GPIO_Port, Chave_Dir_Pin);
+	    chave_esq = HAL_GPIO_ReadPin(Chave_Esq_GPIO_Port, Chave_Esq_Pin);
 
 	}
 }
@@ -203,42 +183,39 @@ int main(void)
   MX_UART4_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
+  MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
-  HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
-  TIM2->CNT = 100000;  // iniciado com este valor para melhor analisar
+  HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL); // Inicia encoder
 
-  HAL_TIM_Base_Start_IT(&htim3); // Inicia interrupção para o PID ou LQR
+  HAL_TIM_Base_Start_IT(&htim3); // Inicia interrupção para o controle do pêndulo
+
+  HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_3); // Inicia PWM para o motor de passo
+
+  HAL_UART_Receive_IT(&huart4, rx_buffer, 3); // Interrupção após preencher o 3º byte
+
+  // Inicializa GPIOs
+  HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 1); // Motor 0 = Anti-horário / 1 = Horário
+  HAL_GPIO_WritePin(ENA_GPIO_Port, ENA_Pin, 1); // Motor 1 = Habilitado / 0 = desabilitado
+  HAL_GPIO_WritePin(Time_Int_GPIO_Port, Time_Int_Pin, 0); // Para debug com osciloscópio
+  HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 0); // Para debug com osciloscópio
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  Inicia_GPIOs();
-
-  // Buffer recebe os coeficientes Kp, Ki e Kd da UART
-  // Ao preencher o buffer, gera uma interrupção chamando o callback acima
-  HAL_UART_Receive_IT(&huart4, rx_buffer, 3); // Agenda a interrupção após preencher o 3º byte
-
-  estado_pendulo = AUTOTESTE;
+  HAL_Delay(500);
+  Pendulo_Inicializa(&pendulo);
 
   while (1)
   {
-
-    val_encoder = TIM2->CNT;
-    val_encoder = val_encoder;
-    for (tempo = 0; tempo < 4000; ++tempo) {
-    	z++;
-    }
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    Expira_rx_buffer();
-    Envia_simulador();
-
-
-
-
+	if(flag_controle == 1)
+	{
+		Pendulo_Atualiza_1ms(&pendulo);
+		flag_controle = 0;
+	}
   }
   /* USER CODE END 3 */
 }
@@ -455,6 +432,65 @@ static void MX_TIM3_Init(void)
 }
 
 /**
+  * @brief TIM5 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM5_Init(void)
+{
+
+  /* USER CODE BEGIN TIM5_Init 0 */
+
+  /* USER CODE END TIM5_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM5_Init 1 */
+
+  /* USER CODE END TIM5_Init 1 */
+  htim5.Instance = TIM5;
+  htim5.Init.Prescaler = 250-1;
+  htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim5.Init.Period = 9999;
+  htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim5) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim5, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim5) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim5, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 5000;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_ENABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim5, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM5_Init 2 */
+
+  /* USER CODE END TIM5_Init 2 */
+  HAL_TIM_MspPostInit(&htim5);
+
+}
+
+/**
   * @brief UART4 Initialization Function
   * @param None
   * @retval None
@@ -521,33 +557,33 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, PUL_Pin|DIR_Pin|ENA_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(Time_Int_GPIO_Port, Time_Int_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(Int_Control_GPIO_Port, Int_Control_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, DIR_Pin|ENA_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : Encoder_Rev_Pin */
-  GPIO_InitStruct.Pin = Encoder_Rev_Pin;
+  /*Configure GPIO pins : Encoder_Rev_Pin Chave_Esq_Pin Chave_Dir_Pin */
+  GPIO_InitStruct.Pin = Encoder_Rev_Pin|Chave_Esq_Pin|Chave_Dir_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(Encoder_Rev_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PUL_Pin DIR_Pin ENA_Pin */
-  GPIO_InitStruct.Pin = PUL_Pin|DIR_Pin|ENA_Pin;
+  /*Configure GPIO pin : Time_Int_Pin */
+  GPIO_InitStruct.Pin = Time_Int_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(Time_Int_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : DIR_Pin ENA_Pin */
+  GPIO_InitStruct.Pin = DIR_Pin|ENA_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : Int_Control_Pin */
-  GPIO_InitStruct.Pin = Int_Control_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(Int_Control_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : Time_Exec_Pin */
   GPIO_InitStruct.Pin = Time_Exec_Pin;
