@@ -83,7 +83,6 @@ static void MX_TIM5_Init(void);
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) // Callback da UART com buffer completo
 {
-
 	if(huart->Instance == UART4)
 	{
 		last_rx_time = HAL_GetTick();
@@ -92,7 +91,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) // Callback da UART com 
 								 (float) rx_buffer[2] / 100);
 		HAL_UART_Receive_IT(&huart4, rx_buffer, 3);
 	}
-
 }
 
 
@@ -138,7 +136,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	    pendulo.encoder = TIM2->CNT;
 	    pendulo.chave_dir = HAL_GPIO_ReadPin(Chave_Dir_GPIO_Port, Chave_Dir_Pin);
 	    pendulo.chave_esq = HAL_GPIO_ReadPin(Chave_Esq_GPIO_Port, Chave_Esq_Pin);
-
 	}
 }
 
