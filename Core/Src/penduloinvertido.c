@@ -10,7 +10,6 @@ static float erro_anterior = 0.0f;
 
 
 // Funções privadas
-static void Pendulo_AutoTeste(Pendulo_t *p);
 static void Pendulo_SwingUp(Pendulo_t *p);
 static void Pendulo_Controle(Pendulo_t *p);
 static void Pendulo_AtualizaAngulo(Pendulo_t *p);
@@ -18,10 +17,12 @@ static void Pendulo_AtualizaVelocidade(Pendulo_t *p);
 
 
 // Inicialização
-void Pendulo_Inicializa(Pendulo_t *p)
+void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor, uint32_t canal_pwm,
+                        GPIO_TypeDef *chave_dir_port, uint16_t chave_dir_pin,
+                        GPIO_TypeDef *chave_esq_port, uint16_t chave_esq_pin,
+	                	GPIO_TypeDef *direcao_port, short unsigned int direcao_pin)
 {
     p->encoder = 0;
-
     p->angulo = 0.0f;
     p->velocidade = 0.0f;
     p->pulso_motor = 0;
@@ -30,22 +31,50 @@ void Pendulo_Inicializa(Pendulo_t *p)
     p->ki = 0.0f;
     p->kd = 0.0f;
 
-    p->estado = PENDULO_AUTOTESTE;
+    p->htim_motor = htim_motor;
+
+    htim_motor->Instance->ARR = 10000;
+    htim_motor->Instance->CCR3 = 5000;
+	HAL_TIM_PWM_Start(htim_motor, canal_pwm);
+	// Tira carro da chave direita
+	if(HAL_GPIO_ReadPin(chave_dir_port, chave_dir_pin) == GPIO_PIN_RESET)
+	{
+		HAL_GPIO_WritePin(direcao_port, direcao_pin, 1); // Esquerda
+	}
+	while(HAL_GPIO_ReadPin(chave_dir_port, chave_dir_pin) == GPIO_PIN_RESET);
+	HAL_Delay(100);
+    // Tira carro da chave esquerda
+	if(HAL_GPIO_ReadPin(chave_esq_port, chave_esq_pin) == GPIO_PIN_RESET)
+	{
+		HAL_GPIO_WritePin(direcao_port, direcao_pin, 0); // Direita
+	}
+	while(HAL_GPIO_ReadPin(chave_esq_port, chave_esq_pin) == GPIO_PIN_RESET);
+	HAL_Delay(100);
+
+	// Escosta o carro na chave direita
+	HAL_GPIO_WritePin(direcao_port, direcao_pin, 0);
+	while(HAL_GPIO_ReadPin(chave_dir_port, chave_dir_pin) == GPIO_PIN_SET);
+
+	// Vai para o meio do guia linear
+	HAL_GPIO_WritePin(direcao_port, direcao_pin, 1);
+	HAL_Delay(10000);
+
+	HAL_TIM_PWM_Stop(htim_motor, canal_pwm);
+
+
+
+    p->estado = PENDULO_SWINGUP;
 }
 
 
 // Loop 1ms
 void Pendulo_Atualiza_1ms(Pendulo_t *p)
 {
-    Pendulo_AtualizaAngulo(p);
-    Pendulo_AtualizaVelocidade(p);
+    //Pendulo_AtualizaAngulo(p);
+    //Pendulo_AtualizaVelocidade(p);
 
     switch(p->estado)
     {
-        case PENDULO_AUTOTESTE:
-            Pendulo_AutoTeste(p);
-            break;
-
         case PENDULO_SWINGUP:
             Pendulo_SwingUp(p);
             break;
@@ -96,13 +125,6 @@ void Pendulo_Parar(Pendulo_t *p)
 PenduloEstado_t Pendulo_PegaEstado(Pendulo_t *p)
 {
     return p->estado;
-}
-
-
-// Auto teste
-static void Pendulo_AutoTeste(Pendulo_t *p)
-{
-    p->estado = PENDULO_AUTOTESTE;
 }
 
 

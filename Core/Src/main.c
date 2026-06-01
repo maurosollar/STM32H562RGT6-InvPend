@@ -56,7 +56,7 @@ DMA_HandleTypeDef handle_GPDMA1_Channel0;
 uint32_t  last_rx_time = 0;
 uint8_t   rx_buffer[3];
 char      tx_buffer[20];
-int32_t   excede_envio;
+int32_t   excede_envio; //somente para debug
 
 volatile uint8_t uart_tx_busy = 0, flag_controle = 0;
 
@@ -133,9 +133,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	    flag_controle = 1;
 	    Expira_rx_Buffer_Simulador();
 	    Envia_simulador();
-	    pendulo.encoder = TIM2->CNT;
-	    pendulo.chave_dir = HAL_GPIO_ReadPin(Chave_Dir_GPIO_Port, Chave_Dir_Pin);
-	    pendulo.chave_esq = HAL_GPIO_ReadPin(Chave_Esq_GPIO_Port, Chave_Esq_Pin);
 	}
 }
 
@@ -182,29 +179,30 @@ int main(void)
   MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL); // Inicia encoder
-
-  HAL_TIM_Base_Start_IT(&htim3); // Inicia interrupção para o controle do pêndulo
-
-  HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_3); // Inicia PWM para o motor de passo
-
-  HAL_UART_Receive_IT(&huart4, rx_buffer, 3); // Interrupção após preencher o 3º byte
+   HAL_UART_Receive_IT(&huart4, rx_buffer, 3); // Interrupção UART após preencher o 3º byte
 
   // Inicializa GPIOs
-  HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 1); // Motor 0 = Anti-horário / 1 = Horário
+  HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 1); // Motor 0 = Anti-horário, carro direita / 1 = Horário, carro esquerda
   HAL_GPIO_WritePin(ENA_GPIO_Port, ENA_Pin, 1); // Motor 1 = Habilitado / 0 = desabilitado
-  HAL_GPIO_WritePin(Time_Int_GPIO_Port, Time_Int_Pin, 0); // Para debug com osciloscópio
-  HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 0); // Para debug com osciloscópio
+  HAL_GPIO_WritePin(Time_Int_GPIO_Port, Time_Int_Pin, 0); // Para análise com osciloscópio
+  HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 0); // Para análise com osciloscópio
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  HAL_Delay(1000);
+  HAL_Delay(500);
 
-  HAL_TIM_PWM_Stop(&htim5, TIM_CHANNEL_3);
-  TIM5->CNT = 0;
+  //HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_3); // Inicia PWM para o motor de passo
+  //HAL_TIM_PWM_Stop(&htim5, TIM_CHANNEL_3); // Para PWM
+  //TIM5->CNT = 0;
 
-  Pendulo_Inicializa(&pendulo);
+  Pendulo_Inicializa(&pendulo, &htim5, TIM_CHANNEL_3,
+		             Chave_Dir_GPIO_Port, Chave_Dir_Pin,
+					 Chave_Esq_GPIO_Port, Chave_Esq_Pin,
+					 DIR_GPIO_Port, DIR_Pin);
+
+  HAL_TIM_Base_Start_IT(&htim3); // Inicia interrupção para o controle do pêndulo
 
   while (1)
   {
@@ -213,7 +211,8 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	if(flag_controle == 1)
 	{
-		Pendulo_Atualiza_1ms(&pendulo);
+		pendulo.encoder = TIM2->CNT;
+        Pendulo_Atualiza_1ms(&pendulo);
 		flag_controle = 0;
 	}
   }
@@ -453,7 +452,7 @@ static void MX_TIM5_Init(void)
   htim5.Instance = TIM5;
   htim5.Init.Prescaler = 250-1;
   htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim5.Init.Period = 9999;
+  htim5.Init.Period = 999999;
   htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim5) != HAL_OK)
@@ -476,7 +475,7 @@ static void MX_TIM5_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 5000;
+  sConfigOC.Pulse = 500000;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_ENABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim5, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)

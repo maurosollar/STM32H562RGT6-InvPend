@@ -192,6 +192,7 @@ Pinout & Configuration
                   Counter Period será alterado no software
                                  Freq = ARR e      CCR3(Counter Period) sempre a metade.    
                   Assim temos:   1Hz  = 1000000
+                                 2Hz  = 500000
                                  1KHz = 1000
                                  2KHz = 500 Motor estável
                                2.5KHz = 400 Motor já não aceita alterações bruscas de velocidade

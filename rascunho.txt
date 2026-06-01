@@ -125,3 +125,79 @@ TIM5->CNT = 0;
     	TIM5->CCR3 = valor / 2; // Capture/Compare Register, ponto em que a saída muda de estado
     }                        // Duty cycle
     
+    
+    
+    
+========================================================
+
+uint8_t direcao = 1;
+  TIM5->ARR = 500;
+  TIM5->CCR3 = 250;
+  HAL_Delay(100);
+  TIM5->ARR = 400;
+  TIM5->CCR3 = 200;
+  while (1)
+  {
+    pendulo.chave_dir = HAL_GPIO_ReadPin(Chave_Dir_GPIO_Port, Chave_Dir_Pin);
+	pendulo.chave_esq = HAL_GPIO_ReadPin(Chave_Esq_GPIO_Port, Chave_Esq_Pin);
+	if(direcao == 1 &&  pendulo.chave_esq == 0)
+	{
+		TIM5->ARR = 10000;
+		TIM5->CCR3 = 5000;
+		HAL_Delay(100);
+		HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 0);
+		TIM5->ARR = 1000;
+		TIM5->CCR3 = 500;
+		HAL_Delay(100);
+		TIM5->ARR = 400;
+		TIM5->CCR3 = 200;
+		direcao = 0;
+
+	}
+
+	if(direcao == 0 &&  pendulo.chave_dir == 0)
+	{
+		TIM5->ARR = 1000;
+		TIM5->CCR3 = 500;
+		HAL_Delay(100);
+		HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 1);
+		TIM5->ARR = 1000;
+		TIM5->CCR3 = 500;
+		HAL_Delay(100);
+		TIM5->ARR = 400;
+		TIM5->CCR3 = 200;
+		direcao = 1;
+
+	}    
+    
+========================================================
+
+Callback 1ms
+HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+	    flag_controle = 1;
+	    Expira_rx_Buffer_Simulador();
+	    Envia_simulador();
+	    pendulo.encoder = TIM2->CNT;
+	    pendulo.chave_dir = HAL_GPIO_ReadPin(Chave_Dir_GPIO_Port, Chave_Dir_Pin);
+	    pendulo.chave_esq = HAL_GPIO_ReadPin(Chave_Esq_GPIO_Port, Chave_Esq_Pin);
+   
+   
+   
+Inicia:
+Direção motor 1=Horário
+Habilitado
+
+TIM2 = Encoder
+TIM3 = interrupção por software 1ms
+TIM5 = PWM
+
+Pendulo_Inicializa(&pendulo, &htim5);
+   
+while(1)
+
+	if(flag_controle == 1)
+	{
+		//Pendulo_Atualiza_1ms(&pendulo);
+		flag_controle = 0;
+	}
+    

@@ -11,8 +11,7 @@ extern "C" {
 // Estados
 typedef enum
 {
-    PENDULO_AUTOTESTE = 0,
-    PENDULO_SWINGUP,
+    PENDULO_SWINGUP = 0,
     PENDULO_CONTROLE,
     PENDULO_ERRO
 
@@ -23,11 +22,16 @@ typedef enum
 typedef struct
 {
     volatile uint32_t encoder;
-    volatile uint8_t chave_esq;
-    volatile uint8_t chave_dir;
+
+    GPIO_TypeDef *chave_dir_port;
+    uint16_t chave_dir_pin;
+
+    GPIO_TypeDef *chave_esq_port;
+    uint16_t chave_esq_pin;
 
     float angulo;
     float velocidade;
+
 
     uint32_t pulso_motor;
 
@@ -35,13 +39,17 @@ typedef struct
     float ki;
     float kd;
 
+    TIM_HandleTypeDef *htim_motor;
     PenduloEstado_t estado;
 
 } Pendulo_t;
 
 
 // Funções públicas
-void Pendulo_Inicializa(Pendulo_t *pendulo);
+void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor, uint32_t canal_pwm,
+		                GPIO_TypeDef *chave_dir_port, uint16_t chave_dir_pin,
+		                GPIO_TypeDef *chave_esq_port, uint16_t chave_esq_pin,
+						GPIO_TypeDef *direcao_port, short unsigned int direcao_pin);
 void Pendulo_Atualiza_1ms(Pendulo_t *pendulo);
 void Pendulo_SetaEncoder(Pendulo_t *pendulo, int32_t encoder);
 void Pendulo_SetaPID(Pendulo_t *pendulo,
