@@ -94,9 +94,13 @@ Start My project from MCU
 Pinout & Configuration / Timers
   TIM2
     Combined Channels: Encoder Mode
-      Configuration / Parameter Settings
+      Configuration / User Constants
+        Add
+        Constant Name: ENCODER_RESOLUTION
+        Constant Value: 9999 (10000 - 1 contagens por volta)
+      Configuration / Parameter Settings    
         Counter Settings
-          Counter Period (AutoReloadRegister 32bits): 4294967295 = 0xffffffff
+          Counter Period (AutoReloadRegister 32bits): ENCODER_RESOLUTION
           Internal Clock Division(CKD): No Division
           auto-reload preload: Enable
         Encoder

@@ -59,6 +59,7 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define ENCODER_RESOLUTION 9999
 #define Encoder_Rev_Pin GPIO_PIN_4
 #define Encoder_Rev_GPIO_Port GPIOA
 #define Chave_Esq_Pin GPIO_PIN_6
