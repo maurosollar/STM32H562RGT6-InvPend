@@ -288,6 +288,16 @@ PA10 = ENA-
 
 ```   
 
+```
+Uma polia GT2 tem 2mm por dente, então como utilizo de 40 dentes, a cada volta tem um deslocamento de 80mm
+Motor que utilizo são 200 passos/volta
+1 passo -> 80/200 = 0,4mm, mas como o driver esta configurado 400 pulsos/volta, então 0x20mm/pulso
+
+```
+
+
+
+
 Algumas observações: Para fazer um Debugger gráfico, ativar em Debug Configuration, e habilite a opção Serial Wire Viewer e ok. 
 Logo depois vá no Menu Windows / show View / SWV Data Trace Timeline Graph
 Clique no botão "Configure Trace", no quadro data trace / Comparator 0 (*) enable e adicione a variável a ser comparada.

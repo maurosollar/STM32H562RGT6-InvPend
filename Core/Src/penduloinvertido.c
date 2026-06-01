@@ -33,8 +33,8 @@ void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor, uint32_t ca
 
     p->htim_motor = htim_motor;
 
-    htim_motor->Instance->ARR = 10000;
-    htim_motor->Instance->CCR3 = 5000;
+    htim_motor->Instance->ARR = 2000;
+    htim_motor->Instance->CCR3 = 1000;
 	HAL_TIM_PWM_Start(htim_motor, canal_pwm);
 	// Tira carro da chave direita
 	if(HAL_GPIO_ReadPin(chave_dir_port, chave_dir_pin) == GPIO_PIN_RESET)
@@ -57,7 +57,7 @@ void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor, uint32_t ca
 
 	// Vai para o meio do guia linear
 	HAL_GPIO_WritePin(direcao_port, direcao_pin, 1);
-	HAL_Delay(10000);
+	HAL_Delay(1000);
 
 	HAL_TIM_PWM_Stop(htim_motor, canal_pwm);
 
