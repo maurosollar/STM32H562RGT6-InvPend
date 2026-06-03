@@ -11,7 +11,8 @@ extern "C" {
 // Estados
 typedef enum
 {
-    PENDULO_SWINGUP = 0,
+	PENDULO_SELFTEST = 0,
+    PENDULO_SWINGUP,
     PENDULO_CONTROLE,
     PENDULO_ERRO
 
@@ -31,6 +32,7 @@ typedef struct
 
     float angulo;
     float velocidade;
+    float posicao_carro;
 
 
     uint32_t pulso_motor;

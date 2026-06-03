@@ -55,7 +55,8 @@ DMA_HandleTypeDef handle_GPDMA1_Channel0;
 uint32_t  last_rx_time = 0;
 uint8_t   rx_buffer[3];
 char      tx_buffer[20];
-int32_t   excede_envio; //somente para debug
+int32_t   excede_envio; // Variável é incrementada caso tenha dados de simulação para enviar
+                        // via serial antes de terminar o anterior (Serial 460800bps)
 
 volatile uint8_t uart_tx_busy = 0, flag_controle = 0;
 
@@ -85,7 +86,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) // Callback da UART com 
 	if(huart->Instance == UART4)
 	{
 		last_rx_time = HAL_GetTick();
-		// Ajuste de PID recebida do simulador no PC
+		// Ajuste de PID recebido do simulador no PC, normlamente de 0 a 99
         Pendulo_SetaPID(&pendulo, (float) rx_buffer[0] / 100,
         		                  (float) rx_buffer[1] / 100,
 						          (float) rx_buffer[2] / 100);
@@ -178,7 +179,7 @@ int main(void)
   MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL); // Inicia encoder
-  HAL_UART_Receive_IT(&huart4, rx_buffer, 3); // Interrupção UART após preencher o 3º byte
+  HAL_UART_Receive_IT(&huart4, rx_buffer, 3); // Interrupção UART após preencher buffer com 3º byte
 
   // Inicializa GPIOs
   HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 1); // Motor 0 = Anti-horário, carro direita / 1 = Horário, carro esquerda

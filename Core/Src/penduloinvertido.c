@@ -10,10 +10,12 @@ static float erro_anterior = 0.0f;
 
 
 // Funções privadas
+static void Pendulo_SelfTest(Pendulo_t *p);
 static void Pendulo_SwingUp(Pendulo_t *p);
 static void Pendulo_Controle(Pendulo_t *p);
 static void Pendulo_AtualizaAngulo(Pendulo_t *p);
 static void Pendulo_AtualizaVelocidade(Pendulo_t *p);
+static void Motor_Velocidade(Pendulo_t *p, uint8_t direcao);
 
 
 // Inicialização
@@ -117,11 +119,15 @@ void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor, uint32_t ca
 // Loop 1ms
 void Pendulo_Atualiza_1ms(Pendulo_t *p)
 {
-    //Pendulo_AtualizaAngulo(p);
-    //Pendulo_AtualizaVelocidade(p);
+    Pendulo_AtualizaAngulo(p);
+    Pendulo_AtualizaVelocidade(p);
 
     switch(p->estado)
     {
+        case PENDULO_SELFTEST:
+            Pendulo_SelfTest(p);
+        break;
+
         case PENDULO_SWINGUP:
             Pendulo_SwingUp(p);
             break;
@@ -136,6 +142,18 @@ void Pendulo_Atualiza_1ms(Pendulo_t *p)
     }
 }
 
+
+
+static void Motor_Velocidade(Pendulo_t *p, uint8_t direcao)
+{
+
+}
+
+// Selftest
+static void Pendulo_SelfTest(Pendulo_t *p)
+{
+    p->estado = PENDULO_SWINGUP;
+}
 
 // Seta encoder
 void Pendulo_SetaEncoder(Pendulo_t *p, int32_t encoder)
@@ -191,7 +209,7 @@ static void Pendulo_Controle(Pendulo_t *p)
 
     erro = setpoint - p->angulo;
     integral += erro * 0.001f;
-    derivada = (erro - erro_anterior) / 0.001f;
+    derivada = (erro - erro_anterior) / 0.001f; // 1ms
 
     p->pulso_motor =
             (p->kp * erro) +
@@ -200,12 +218,7 @@ static void Pendulo_Controle(Pendulo_t *p)
 
     erro_anterior = erro;
 
-
-    /*
-     * Se cair muito,
-     * volta para swing-up
-     */
-
+    // maior que 30 graus volta para o Swing-UP
     if(fabsf(p->angulo) > 30.0f)
     {
         p->estado = PENDULO_SWINGUP;
@@ -231,7 +244,7 @@ static void Pendulo_AtualizaVelocidade(Pendulo_t *p)
     static float angulo_anterior = 0.0f;
 
     p->velocidade =
-            (p->angulo - angulo_anterior) / 0.001f;
+            (p->angulo - angulo_anterior) / 0.001f; // 1 ms
 
     angulo_anterior = p->angulo;
 }
