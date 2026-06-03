@@ -23,7 +23,6 @@
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
 #include "string.h"
-#include "stdlib.h"
 #include "penduloinvertido.h"
 
 /* USER CODE END Includes */
@@ -86,10 +85,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) // Callback da UART com 
 	if(huart->Instance == UART4)
 	{
 		last_rx_time = HAL_GetTick();
+		// Ajuste de PID recebida do simulador no PC
         Pendulo_SetaPID(&pendulo, (float) rx_buffer[0] / 100,
-        		                 (float) rx_buffer[1] / 100,
-								 (float) rx_buffer[2] / 100);
-		HAL_UART_Receive_IT(&huart4, rx_buffer, 3);
+        		                  (float) rx_buffer[1] / 100,
+						          (float) rx_buffer[2] / 100);
 	}
 }
 
@@ -118,8 +117,8 @@ void Envia_simulador() // Envia dados para o simulador
 	if(uart_tx_busy == 0)
 	{
 		uart_tx_busy = 1;
-		sprintf((char*)tx_buffer, ">>>>>>>ENC:%ld\r\n", pendulo.encoder);
-		HAL_UART_Transmit_DMA(&huart4, (uint8_t*)tx_buffer, 20);
+		sprintf((char*)tx_buffer, "ENC:%.1f\r\n", (float) (pendulo.encoder / 27.777778f) - 180);
+		HAL_UART_Transmit_DMA(&huart4, (uint8_t*)tx_buffer, strlen(tx_buffer));
 	} else {
 		excede_envio++;
 	}
@@ -179,7 +178,7 @@ int main(void)
   MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL); // Inicia encoder
-   HAL_UART_Receive_IT(&huart4, rx_buffer, 3); // Interrupção UART após preencher o 3º byte
+  HAL_UART_Receive_IT(&huart4, rx_buffer, 3); // Interrupção UART após preencher o 3º byte
 
   // Inicializa GPIOs
   HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 1); // Motor 0 = Anti-horário, carro direita / 1 = Horário, carro esquerda
@@ -211,7 +210,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	if(flag_controle == 1)
 	{
-		pendulo.encoder = TIM2->CNT;
+		Pendulo_SetaEncoder(&pendulo, TIM2->CNT);
         Pendulo_Atualiza_1ms(&pendulo);
 		flag_controle = 0;
 	}

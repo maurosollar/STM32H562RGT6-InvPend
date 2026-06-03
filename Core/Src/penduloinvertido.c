@@ -57,7 +57,54 @@ void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor, uint32_t ca
 
 	// Vai para o meio do guia linear
 	HAL_GPIO_WritePin(direcao_port, direcao_pin, 1);
-	HAL_Delay(1000);
+    htim_motor->Instance->ARR = 500;
+    htim_motor->Instance->CCR3 = 250;
+    HAL_Delay(500);
+	//HAL_TIM_PWM_Stop(htim_motor, canal_pwm);
+    while(1)
+    {
+        HAL_GPIO_WritePin(direcao_port, direcao_pin, 0);
+        // 300 -> 600
+        for (int i = 180; i <= 360; i= i + 10)
+        {
+            float rad = i * (float)M_PI / 180.0f;
+            uint32_t valor = (uint32_t)(700.0f + 300.0f * cosf(rad));
+
+			htim_motor->Instance->ARR = valor;
+			htim_motor->Instance->CCR3 = (uint32_t) valor / 2;
+            HAL_Delay(34);
+			if(HAL_GPIO_ReadPin(chave_dir_port, chave_dir_pin) == GPIO_PIN_RESET
+			   || HAL_GPIO_ReadPin(chave_esq_port, chave_esq_pin) == GPIO_PIN_RESET)
+			{
+				break;
+			}
+        }
+    	HAL_GPIO_WritePin(direcao_port, direcao_pin, 1);
+        // 600 -> 300
+        for (int i = 0; i <= 180; i = i + 10)
+        {
+            float rad = i * (float)M_PI / 180.0f;
+            uint32_t valor = (uint32_t)(700.0f + 300.0f * cosf(rad));
+
+			htim_motor->Instance->ARR = valor;
+			htim_motor->Instance->CCR3 = (uint32_t) valor / 2;
+            HAL_Delay(34);
+			if(HAL_GPIO_ReadPin(chave_dir_port, chave_dir_pin) == GPIO_PIN_RESET
+			   || HAL_GPIO_ReadPin(chave_esq_port, chave_esq_pin) == GPIO_PIN_RESET)
+			{
+				break;
+			}
+        }
+
+
+        if(HAL_GPIO_ReadPin(chave_dir_port, chave_dir_pin) == GPIO_PIN_RESET
+           || HAL_GPIO_ReadPin(chave_esq_port, chave_esq_pin) == GPIO_PIN_RESET)
+        {
+        	break;
+        }
+
+    }
+
 
 	HAL_TIM_PWM_Stop(htim_motor, canal_pwm);
 
@@ -121,13 +168,6 @@ void Pendulo_Parar(Pendulo_t *p)
     p->estado = PENDULO_ERRO;
 }
 
-// Pega estado
-PenduloEstado_t Pendulo_PegaEstado(Pendulo_t *p)
-{
-    return p->estado;
-}
-
-
 // SWING-UP
 static void Pendulo_SwingUp(Pendulo_t *p)
 {
@@ -181,7 +221,7 @@ static void Pendulo_AtualizaAngulo(Pendulo_t *p)
      * Converter encoder em ângulo
      */
 
-    p->angulo = (float)p->encoder * 0.01f;
+    p->angulo = (float)p->encoder / 27.777778f;
 }
 
 

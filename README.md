@@ -209,9 +209,13 @@ Pinout & Configuration
         GPIO Settings
           GPIO mode: Alternate Function Open Drain
           Maximum output speed: High
+ 
+ 
           
-     
-          
+No STM32CubeIDE:     
+Ativar float format para para formatação com sprintf:
+check your MCU Settings from "Project Properties > C/C++ Build >
+Settings > Tool Settings", or add manually "-u _printf_float" in linker flag          
       
       
 ```

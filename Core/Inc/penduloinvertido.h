@@ -61,8 +61,6 @@ void Pendulo_IniciaSwingUp(Pendulo_t *pendulo);
 
 void Pendulo_Parar(Pendulo_t *pendulo);
 
-PenduloEstado_t Pendulo_PegaEstado(Pendulo_t *pendulo);
-
 #ifdef __cplusplus
 }
 #endif
