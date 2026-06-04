@@ -203,8 +203,93 @@ while(1)
 	
 	
 
+  //HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_3); // Inicia PWM para o motor de passo
+  //HAL_TIM_PWM_Stop(&htim5, TIM_CHANNEL_3); // Para PWM
+  //TIM5->CNT = 0;	
+	
+
 Algumas observações: Para fazer um Debugger gráfico, ativar em Debug Configuration, e habilite a opção Serial Wire Viewer e ok. 
 Logo depois vá no Menu Windows / show View / SWV Data Trace Timeline Graph
 Clique no botão "Configure Trace", no quadro data trace / Comparator 0 (*) enable e adicione a variável a ser comparada.
+
+
+
+
+   htim_motor->Instance->ARR = 2000;
+    htim_motor->Instance->CCR3 = 1000;
+	HAL_TIM_PWM_Start(htim_motor, canal_pwm);
+	// Tira carro da chave direita
+	if(HAL_GPIO_ReadPin(chave_dir_port, chave_dir_pin) == GPIO_PIN_RESET)
+	{
+		HAL_GPIO_WritePin(direcao_port, direcao_pin, 1); // Esquerda
+	}
+	while(HAL_GPIO_ReadPin(chave_dir_port, chave_dir_pin) == GPIO_PIN_RESET);
+	HAL_Delay(100);
+    // Tira carro da chave esquerda
+	if(HAL_GPIO_ReadPin(chave_esq_port, chave_esq_pin) == GPIO_PIN_RESET)
+	{
+		HAL_GPIO_WritePin(direcao_port, direcao_pin, 0); // Direita
+	}
+	while(HAL_GPIO_ReadPin(chave_esq_port, chave_esq_pin) == GPIO_PIN_RESET);
+	HAL_Delay(100);
+
+	// Escosta o carro na chave direita
+	HAL_GPIO_WritePin(direcao_port, direcao_pin, 0);
+	while(HAL_GPIO_ReadPin(chave_dir_port, chave_dir_pin) == GPIO_PIN_SET);
+
+	// Vai para o meio do guia linear
+	HAL_GPIO_WritePin(direcao_port, direcao_pin, 1);
+    htim_motor->Instance->ARR = 500;
+    htim_motor->Instance->CCR3 = 250;
+    HAL_Delay(500);
+	//HAL_TIM_PWM_Stop(htim_motor, canal_pwm);
+    while(1)
+    {
+        HAL_GPIO_WritePin(direcao_port, direcao_pin, 0);
+        // 300 -> 600
+        for (int i = 180; i <= 360; i= i + 10)
+        {
+            float rad = i * (float)M_PI / 180.0f;
+            uint32_t valor = (uint32_t)(700.0f + 300.0f * cosf(rad));
+
+			htim_motor->Instance->ARR = valor;
+			htim_motor->Instance->CCR3 = (uint32_t) valor / 2;
+            HAL_Delay(34);
+			if(HAL_GPIO_ReadPin(chave_dir_port, chave_dir_pin) == GPIO_PIN_RESET
+			   || HAL_GPIO_ReadPin(chave_esq_port, chave_esq_pin) == GPIO_PIN_RESET)
+			{
+				break;
+			}
+        }
+    	HAL_GPIO_WritePin(direcao_port, direcao_pin, 1);
+        // 600 -> 300
+        for (int i = 0; i <= 180; i = i + 10)
+        {
+            float rad = i * (float)M_PI / 180.0f;
+            uint32_t valor = (uint32_t)(700.0f + 300.0f * cosf(rad));
+
+			htim_motor->Instance->ARR = valor;
+			htim_motor->Instance->CCR3 = (uint32_t) valor / 2;
+            HAL_Delay(34);
+			if(HAL_GPIO_ReadPin(chave_dir_port, chave_dir_pin) == GPIO_PIN_RESET
+			   || HAL_GPIO_ReadPin(chave_esq_port, chave_esq_pin) == GPIO_PIN_RESET)
+			{
+				break;
+			}
+        }
+
+
+        if(HAL_GPIO_ReadPin(chave_dir_port, chave_dir_pin) == GPIO_PIN_RESET
+           || HAL_GPIO_ReadPin(chave_esq_port, chave_esq_pin) == GPIO_PIN_RESET)
+        {
+        	break;
+        }
+        
+}
+
+    }
+
+
+	HAL_TIM_PWM_Stop(htim_motor, canal_pwm);        
 	
     

@@ -8,18 +8,16 @@ extern "C" {
 #include "main.h"
 #include "stdint.h"
 
-// Estados
-typedef enum
+
+typedef enum // Estados
 {
 	PENDULO_SELFTEST = 0,
     PENDULO_SWINGUP,
     PENDULO_CONTROLE,
     PENDULO_ERRO
-
 } PenduloEstado_t;
 
 
-// Estrutura principal
 typedef struct
 {
     volatile uint32_t encoder;
@@ -30,10 +28,12 @@ typedef struct
     GPIO_TypeDef *chave_esq_port;
     uint16_t chave_esq_pin;
 
+    GPIO_TypeDef *direcao_port;
+    short unsigned int direcao_pin;
+
     float angulo;
     float velocidade;
     float posicao_carro;
-
 
     uint32_t pulso_motor;
 
@@ -41,27 +41,23 @@ typedef struct
     float ki;
     float kd;
 
-    TIM_HandleTypeDef *htim_motor;
+    TIM_HandleTypeDef *htim_motor_pwm;
+    uint32_t canal_pwm;
     PenduloEstado_t estado;
 
 } Pendulo_t;
 
-
-// Funções públicas
-void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor, uint32_t canal_pwm,
+/**
+ * @brief Protótipos das funções públicas
+ */
+void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor_pwm, uint32_t canal_pwm,
 		                GPIO_TypeDef *chave_dir_port, uint16_t chave_dir_pin,
 		                GPIO_TypeDef *chave_esq_port, uint16_t chave_esq_pin,
 						GPIO_TypeDef *direcao_port, short unsigned int direcao_pin);
-void Pendulo_Atualiza_1ms(Pendulo_t *pendulo);
-void Pendulo_SetaEncoder(Pendulo_t *pendulo, int32_t encoder);
-void Pendulo_SetaPID(Pendulo_t *pendulo,
-                    float kp,
-                    float ki,
-                    float kd);
+void Pendulo_AtualizaPendulo(Pendulo_t *pendulo);
+void Pendulo_PegaValorEncoder(Pendulo_t *pendulo, int32_t encoder);
+void Pendulo_SetaPID(Pendulo_t *pendulo, float kp, float ki, float kd);
 
-void Pendulo_IniciaSwingUp(Pendulo_t *pendulo);
-
-void Pendulo_Parar(Pendulo_t *pendulo);
 
 #ifdef __cplusplus
 }

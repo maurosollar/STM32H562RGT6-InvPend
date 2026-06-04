@@ -52,11 +52,14 @@ UART_HandleTypeDef huart4;
 DMA_HandleTypeDef handle_GPDMA1_Channel0;
 
 /* USER CODE BEGIN PV */
-uint32_t  last_rx_time = 0;
-uint8_t   rx_buffer[3];
-char      tx_buffer[20];
+uint32_t  last_rx_time = 0; // Controle de tempo para expirar dado recebido pela UART
+uint8_t   rx_buffer[3];     // Buffer do RX da UART
+char      tx_buffer[20];    // Buffer do TX da UART
 int32_t   excede_envio; // Variável é incrementada caso tenha dados de simulação para enviar
                         // via serial antes de terminar o anterior (Serial 460800bps)
+                        // significa que não esta dando tempo de enviar novos dados
+                        // antes de acabar de enviar os dados anteriores.
+                        // Obs.: Utilizada somente para análise e debug
 
 volatile uint8_t uart_tx_busy = 0, flag_controle = 0;
 
@@ -81,22 +84,29 @@ static void MX_TIM5_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) // Callback da UART com buffer completo
+/**
+ * @brief Ajusta PID com dados recebido do simulador no PC, normlamente de 0 a 99
+ *		  Com isto temos os coeficientes Kp, Ki, Kd normalmente variando de 0 a 0.99
+ */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if(huart->Instance == UART4)
 	{
 		last_rx_time = HAL_GetTick();
-		// Ajuste de PID recebido do simulador no PC, normlamente de 0 a 99
+
         Pendulo_SetaPID(&pendulo, (float) rx_buffer[0] / 100,
         		                  (float) rx_buffer[1] / 100,
 						          (float) rx_buffer[2] / 100);
 	}
 }
 
-
+/**
+ * @brief Descarta dados do buffer caso a UART não seja preenchida em 1 segundo
+ */
 void Expira_rx_Buffer_Simulador()
+
 {
-	if((HAL_GetTick() - last_rx_time) > 1000 && rx_buffer[0] > 0) // > 1 seg limpa buffer
+	if((HAL_GetTick() - last_rx_time) > 1000 && rx_buffer[0] > 0)
 	{
 		memset(rx_buffer, 0, sizeof(rx_buffer));
 		HAL_UART_AbortReceive_IT(&huart4);
@@ -104,7 +114,10 @@ void Expira_rx_Buffer_Simulador()
 	}
 }
 
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) // Seta variável uart_tx_busy = 0 sinalizando que acabou a transmissão
+/**
+ * @brief Seta variável uart_tx_busy = 0 sinalizando que acabou a transmissão UART
+ */
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if(huart->Instance == UART4)
 	{
@@ -112,8 +125,10 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) // Seta variável uart_t
 	}
 }
 
-
-void Envia_simulador() // Envia dados para o simulador
+/**
+ *  @brief Envia dados para o simulador no PC
+ */
+void Envia_simulador()
 {
 	if(uart_tx_busy == 0)
 	{
@@ -125,7 +140,10 @@ void Envia_simulador() // Envia dados para o simulador
 	}
 }
 
-
+/**
+ * @brief Esta função é chamada pelo timer 3 programado para cada 1 ms
+ *        É o coração do controle do pêndulo invertido
+ */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim == &htim3)
@@ -179,7 +197,7 @@ int main(void)
   MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL); // Inicia encoder
-  HAL_UART_Receive_IT(&huart4, rx_buffer, 3); // Interrupção UART após preencher buffer com 3º byte
+  HAL_UART_Receive_IT(&huart4, rx_buffer, 3); // Gera interrupção após UART preencher buffer com 3º bytes
 
   // Inicializa GPIOs
   HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 1); // Motor 0 = Anti-horário, carro direita / 1 = Horário, carro esquerda
@@ -191,12 +209,22 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  HAL_Delay(500);
 
-  //HAL_TIM_PWM_Start(&htim5, TIM_CHANNEL_3); // Inicia PWM para o motor de passo
-  //HAL_TIM_PWM_Stop(&htim5, TIM_CHANNEL_3); // Para PWM
-  //TIM5->CNT = 0;
+  HAL_Delay(500); // Atraso para estabilização
 
+  /**
+ * @brief Inicializa Pêndulo passando as referências necessárias
+ *
+ * @param pendulo - Estrutura principal
+ * @param htim5 - Timer PWM
+ * @param TIM_CHANNEL_3 - Canal PWM
+ * @param Chave_Dir_GPIO_Port - GPIO chave de fim de curso direita
+ * @param Chave_Dir_Pin - Pino associado
+ * @param Chave_Esq_GPIO_Port - GPIO chave de fim de curso esquerda
+ * @param Chave_Esq_Pin - Pino associado
+ * @param DIR_GPIO_Port - Direção do motor
+ * @param DIR_Pin - Pino associado
+ */
   Pendulo_Inicializa(&pendulo, &htim5, TIM_CHANNEL_3,
 		             Chave_Dir_GPIO_Port, Chave_Dir_Pin,
 					 Chave_Esq_GPIO_Port, Chave_Esq_Pin,
@@ -211,8 +239,8 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	if(flag_controle == 1)
 	{
-		Pendulo_SetaEncoder(&pendulo, TIM2->CNT);
-        Pendulo_Atualiza_1ms(&pendulo);
+		Pendulo_PegaValorEncoder(&pendulo, TIM2->CNT);
+        Pendulo_AtualizaPendulo(&pendulo);
 		flag_controle = 0;
 	}
   }
