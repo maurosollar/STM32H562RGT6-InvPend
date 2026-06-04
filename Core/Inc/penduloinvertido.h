@@ -47,6 +47,13 @@ typedef struct
 
 } Pendulo_t;
 
+typedef enum
+{
+	 Chaves_abertas = 0,
+	 Chave_direita_fechada,
+	 Chave_esquerda_fechada
+} EstadoChave_t;
+
 /**
  * @brief Protótipos das funções públicas
  */

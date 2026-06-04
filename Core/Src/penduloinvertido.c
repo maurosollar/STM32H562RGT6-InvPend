@@ -7,6 +7,7 @@
 // Variáveis internas
 static float integral = 0.0f;
 static float erro_anterior = 0.0f;
+static EstadoChave_t EstadoChave;
 
 
 // Funções privadas
@@ -15,7 +16,9 @@ static void Pendulo_SwingUp(Pendulo_t *p);
 static void Pendulo_Controle(Pendulo_t *p);
 static void Pendulo_AtualizaAngulo(Pendulo_t *p);
 static void Pendulo_AtualizaVelocidade(Pendulo_t *p);
-static void Motor_Velocidade(Pendulo_t *p, uint8_t direcao);
+static void Motor_Velocidade(Pendulo_t *p, int16_t velocidade);
+static void Pendulo_Parar(Pendulo_t *p);
+static EstadoChave_t Chave_Fim_Curso(Pendulo_t *p);
 
 
 /**
@@ -44,6 +47,8 @@ void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor_pwm, uint32_
     p->chave_esq_pin = chave_esq_pin;
     p->direcao_port = direcao_port;
     p->direcao_pin = direcao_pin;
+
+    Motor_Velocidade(p, 0);
 
     p->estado = PENDULO_SELFTEST;
 }
@@ -78,6 +83,29 @@ void Pendulo_AtualizaPendulo(Pendulo_t *p)
 }
 
 /**
+ * @brief Verifica estado das chaves de fim de curso
+ */
+static EstadoChave_t Chave_Fim_Curso(Pendulo_t *p)
+{
+	if(HAL_GPIO_ReadPin(p->chave_dir_port, p->chave_dir_pin) == GPIO_PIN_SET ||
+	   HAL_GPIO_ReadPin(p->chave_esq_port, p->chave_esq_pin) == GPIO_PIN_SET)
+	{
+		EstadoChave = Chaves_abertas;
+
+	}
+	if(HAL_GPIO_ReadPin(p->chave_dir_port, p->chave_dir_pin) == GPIO_PIN_RESET)
+	{
+		EstadoChave = Chave_direita_fechada;
+	}
+	if(HAL_GPIO_ReadPin(p->chave_esq_port, p->chave_esq_pin) == GPIO_PIN_RESET)
+	{
+		EstadoChave = Chave_esquerda_fechada;
+	}
+	return EstadoChave;
+}
+
+
+/**
  * @brief Altera velocidade do motor mudando os valores de ARR e CCRx com base em 1MHz do contador.
  *        Ex.: ARR = 1000000 e CCRx 1000000/2 (Sempre metade para que o duty cycle seja 50%)
  *        Assim temos: 1Hz = 1000000
@@ -92,20 +120,32 @@ void Pendulo_AtualizaPendulo(Pendulo_t *p)
  *
  * @param Estrutura Pendulo_t
  * @param velocidade em mm/s
+ * @param direcao 0 = Direita / 1 = Esquerda
  */
-static void Motor_Velocidade(Pendulo_t *p, uint16_t velocidade)
+static void Motor_Velocidade(Pendulo_t *p, int16_t velocidade)
 {
 	uint32_t valor;
-	if(velocidade > 0)
+	if(velocidade > 0) // Carro para direira
 	{
-		if(!(p->htim_motor_pwm->Instance->CCER & TIM_CCER_CC3E)) // PWM desativado
+		HAL_GPIO_WritePin(p->direcao_port, p->direcao_pin, 0);
+	}
+	else
+	{
+		HAL_GPIO_WritePin(p->direcao_port, p->direcao_pin, 1);
+		velocidade= -velocidade;
+	}
+
+	if(velocidade != 0)
+	{
+		if(!(p->htim_motor_pwm->Instance->CCER & TIM_CCER_CC3E)) // Evita ficar desativando PWM sempre
 		{
 			HAL_TIM_PWM_Start(p->htim_motor_pwm, p->canal_pwm);
 		}
 		valor = (uint32_t) ((200000 / velocidade) - 1.0f);
 		p->htim_motor_pwm->Instance->ARR = valor;
 		p->htim_motor_pwm->Instance->CCR3 = (uint32_t) valor / 2;
-	} else
+	}
+	else
 	{
 		HAL_TIM_PWM_Stop(p->htim_motor_pwm, p->canal_pwm);
 	}
@@ -115,6 +155,41 @@ static void Motor_Velocidade(Pendulo_t *p, uint16_t velocidade)
 // Selftest
 static void Pendulo_SelfTest(Pendulo_t *p)
 {
+	int16_t velocidade;
+	velocidade = 100;
+	if(Chave_Fim_Curso(p) == Chaves_abertas)
+	{
+		// Corre carro para direira
+		Motor_Velocidade(p, velocidade);
+	    while(Chave_Fim_Curso(p) != Chave_direita_fechada);
+	    Motor_Velocidade(p, 0);
+	    // Corre carro para esquerda
+		Motor_Velocidade(p, -velocidade);
+	    while(Chave_Fim_Curso(p) != Chave_esquerda_fechada);
+	    Motor_Velocidade(p, 0);
+	}
+	if(Chave_Fim_Curso(p) == Chave_direita_fechada)
+	{
+	    // Corre carro para esquerda
+		Motor_Velocidade(p, -velocidade);
+	    while(Chave_Fim_Curso(p) != Chave_esquerda_fechada);
+	    Motor_Velocidade(p, 0);
+		// Corre carro para direira
+		Motor_Velocidade(p, velocidade);
+	    while(Chave_Fim_Curso(p) != Chave_direita_fechada);
+	    Motor_Velocidade(p, 0);
+
+	}
+	if(Chave_Fim_Curso(p) == Chave_esquerda_fechada)
+	{
+		// Corre carro para direira
+		Motor_Velocidade(p, velocidade);
+	    while(Chave_Fim_Curso(p) != Chave_direita_fechada);
+	    Motor_Velocidade(p, 0);
+
+	}
+
+
     p->estado = PENDULO_SWINGUP;
 }
 
