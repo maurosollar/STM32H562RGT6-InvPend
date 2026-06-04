@@ -52,6 +52,7 @@ UART_HandleTypeDef huart4;
 DMA_HandleTypeDef handle_GPDMA1_Channel0;
 
 /* USER CODE BEGIN PV */
+uint32_t  tempo;            // Variável para testes de tempo
 uint32_t  last_rx_time = 0; // Controle de tempo para expirar dado recebido pela UART
 uint8_t   rx_buffer[3];     // Buffer do RX da UART
 char      tx_buffer[20];    // Buffer do TX da UART

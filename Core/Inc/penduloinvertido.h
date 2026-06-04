@@ -8,6 +8,7 @@ extern "C" {
 #include "main.h"
 #include "stdint.h"
 
+extern uint32_t tempo;
 
 typedef enum // Estados
 {

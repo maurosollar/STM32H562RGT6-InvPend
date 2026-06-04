@@ -156,7 +156,8 @@ static void Motor_Velocidade(Pendulo_t *p, int16_t velocidade)
 static void Pendulo_SelfTest(Pendulo_t *p)
 {
 	int16_t velocidade;
-	velocidade = 100;
+	velocidade = 200; // mm/s
+
 	if(Chave_Fim_Curso(p) == Chaves_abertas)
 	{
 		// Corre carro para direira
@@ -168,11 +169,14 @@ static void Pendulo_SelfTest(Pendulo_t *p)
 	    while(Chave_Fim_Curso(p) != Chave_esquerda_fechada);
 	    Motor_Velocidade(p, 0);
 	}
+
 	if(Chave_Fim_Curso(p) == Chave_direita_fechada)
 	{
+
 	    // Corre carro para esquerda
 		Motor_Velocidade(p, -velocidade);
 	    while(Chave_Fim_Curso(p) != Chave_esquerda_fechada);
+
 	    Motor_Velocidade(p, 0);
 		// Corre carro para direira
 		Motor_Velocidade(p, velocidade);
@@ -180,15 +184,20 @@ static void Pendulo_SelfTest(Pendulo_t *p)
 	    Motor_Velocidade(p, 0);
 
 	}
+
 	if(Chave_Fim_Curso(p) == Chave_esquerda_fechada)
 	{
 		// Corre carro para direira
 		Motor_Velocidade(p, velocidade);
 	    while(Chave_Fim_Curso(p) != Chave_direita_fechada);
 	    Motor_Velocidade(p, 0);
-
 	}
 
+	{   // Vai para o centro
+        Motor_Velocidade(p, -velocidade);
+        HAL_Delay(1500);
+        Motor_Velocidade(p, 0);
+	}
 
     p->estado = PENDULO_SWINGUP;
 }
