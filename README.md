@@ -197,7 +197,7 @@ Pinout & Configuration
     TIM5
       Mode
         Clock Source: Internal Clock (Na árvore de clock APB1 Timer clock = 250MHz
-        Channel1: PWM Generation CH1  (PA2 - TIM4_CH3 = PUL do driver motor de passo)
+        Channel1: PWM Generation CH1  (PA2 - TIM5_CH3 = PUL do driver motor de passo)
       Configuration
         Parameters Settings
           Counter Settings

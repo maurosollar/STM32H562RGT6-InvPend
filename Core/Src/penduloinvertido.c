@@ -92,20 +92,22 @@ void Pendulo_AtualizaPendulo(Pendulo_t *p)
  */
 static EstadoChave_t Chave_Fim_Curso(Pendulo_t *p)
 {
-	if(HAL_GPIO_ReadPin(p->chave_dir_port, p->chave_dir_pin) == GPIO_PIN_SET ||
+	if(HAL_GPIO_ReadPin(p->chave_dir_port, p->chave_dir_pin) == GPIO_PIN_SET &&
 	   HAL_GPIO_ReadPin(p->chave_esq_port, p->chave_esq_pin) == GPIO_PIN_SET)
 	{
 		EstadoChave = Chaves_abertas;
-
 	}
+
 	if(HAL_GPIO_ReadPin(p->chave_dir_port, p->chave_dir_pin) == GPIO_PIN_RESET)
 	{
 		EstadoChave = Chave_direita_fechada;
 	}
+
 	if(HAL_GPIO_ReadPin(p->chave_esq_port, p->chave_esq_pin) == GPIO_PIN_RESET)
 	{
 		EstadoChave = Chave_esquerda_fechada;
 	}
+
 	return EstadoChave;
 }
 
