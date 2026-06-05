@@ -68,7 +68,9 @@ Project Manager
     memcpy(tx_buffer, "Ola STM32 DMA.....\r\n", 20);
     HAL_GPIO_TogglePin(PUL_GPIO_Port, PUL_Pin);
         
-        
+=============================================================================================     
+
+HAL_TIM_Base_Start(&htimx);   
 Rotina para atraso em microsegundos, só configurar o Timer X e não ativar a interrupção,
 vamos utiliza-lo somente para contar        
 void atraso_us(uint32_t us)
@@ -76,7 +78,7 @@ void atraso_us(uint32_t us)
     __HAL_TIM_SET_COUNTER(&htimX,0); /Setando o contador para 0
     while(__HAL_TIM_GET_COUNTER(&htim2) < us);
  }
-      
+==============================================================================================      
       
 Parar o motor, parar a contagem do CNT do TIM5 para não gerar PWM
 HAL_TIM_PWM_Stop(&htim5, TIM_CHANNEL_3);

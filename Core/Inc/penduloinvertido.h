@@ -8,7 +8,9 @@ extern "C" {
 #include "main.h"
 #include "stdint.h"
 
+// Atenção, biblioteca exige os elementos abaixo no main.c
 extern uint32_t tempo;
+extern void atraso_us(uint32_t us);
 
 typedef enum // Estados
 {

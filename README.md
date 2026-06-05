@@ -171,13 +171,25 @@ Pinout & Configuration
   Timers
     TIM3
       Mode
-        Clock Source: Internal Clock (Na árvore de clock APB1 Timer clock = 250MHz
+        Clock Source: Internal Clock (Na árvore de clock APB1 Timer clock = 250MHz)
       Configuration
         Parameters Settings
           Prescaler (PSC - 16 bits value): 250-1 (Então o timer incrementa a cada 1 MHZ)
           Counter Period: 1000-1 ( 1us * 1000 = 1ms)
         NVIC Settings
           TIM3 global interrupt (*)
+          
+=== Configurando Timer 4 para rotina de atraso em us === 
+Pinout & Configuration
+  Timers
+    TIM4
+      Mode
+        Clock Source: Internal Clock (Na árvore de clock APB1 Timer clock = 250MHz)
+      Configuration
+        Parameters Settings
+          Prescaler (PSC - 16 bits value): 250-1 (Então o timer incrementa a cada 1 MHZ)
+          Somente isto, lembrando que o o registrador é de 16 bits, então só conseguimos +-65ms de atraso
+      
         
 === Configurando PWM variável para controle de pulsos do driver do motor de passo ===
 Pinout & Configuration

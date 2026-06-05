@@ -59,6 +59,10 @@ void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor_pwm, uint32_
  */
 void Pendulo_AtualizaPendulo(Pendulo_t *p)
 {
+	if(Chave_Fim_Curso(p) == Chave_direita_fechada || Chave_Fim_Curso(p) == Chave_esquerda_fechada)
+	{
+		p->estado = PENDULO_ERRO;
+	}
     Pendulo_AtualizaAngulo(p);
     Pendulo_AtualizaVelocidade(p);
 
@@ -81,6 +85,7 @@ void Pendulo_AtualizaPendulo(Pendulo_t *p)
             break;
     }
 }
+
 
 /**
  * @brief Verifica estado das chaves de fim de curso
@@ -113,7 +118,7 @@ static EstadoChave_t Chave_Fim_Curso(Pendulo_t *p)
  *                     1KHz = 1000
  *                     2KHz = 500 Motor estável
  *                   2.5KHz = 400 Motor já não aceita alterações bruscas de velocidade
- *                     5KHz = 200
+ *
  *        Sabendo que o aparelho de experimento tem uma polia GT2 de 40 dentes de 2mm cada,
  *        motor de 200 passos por volta com o controlador fazendo 1/2 passo, resultando 400 passos
  *        por volta. 40 dentes * 2mm = 80mm por volta / 400 passos = 0.2mm por passo.
@@ -125,29 +130,47 @@ static EstadoChave_t Chave_Fim_Curso(Pendulo_t *p)
 static void Motor_Velocidade(Pendulo_t *p, int16_t velocidade)
 {
 	uint32_t valor;
-	if(velocidade > 0) // Carro para direira
-	{
-		HAL_GPIO_WritePin(p->direcao_port, p->direcao_pin, 0);
-	}
-	else
-	{
-		HAL_GPIO_WritePin(p->direcao_port, p->direcao_pin, 1);
-		velocidade= -velocidade;
-	}
+	static int16_t velocidade_anterior = 0;
 
-	if(velocidade != 0)
-	{
-		if(!(p->htim_motor_pwm->Instance->CCER & TIM_CCER_CC3E)) // Evita ficar desativando PWM sempre
+
+    if(velocidade != velocidade_anterior)
+    {
+		if(velocidade > 0) // Carro para direira
 		{
-			HAL_TIM_PWM_Start(p->htim_motor_pwm, p->canal_pwm);
+			if(HAL_GPIO_ReadPin(p->chave_dir_port, p->chave_dir_pin) == GPIO_PIN_SET) // Evita mudar sempre
+			{
+			    HAL_GPIO_WritePin(p->direcao_port, p->direcao_pin, 0);
+			    atraso_us(10); // Atraso necessário ao mudar de direção no DM556, visto no datasheet, mínimo de 5us
+			}
 		}
-		valor = (uint32_t) ((200000 / velocidade) - 1.0f);
-		p->htim_motor_pwm->Instance->ARR = valor;
-		p->htim_motor_pwm->Instance->CCR3 = (uint32_t) valor / 2;
-	}
-	else
-	{
-		HAL_TIM_PWM_Stop(p->htim_motor_pwm, p->canal_pwm);
+		else
+		{
+			if(HAL_GPIO_ReadPin(p->chave_dir_port, p->chave_dir_pin) == GPIO_PIN_RESET) // Evita mudar sempre
+			{
+			    HAL_GPIO_WritePin(p->direcao_port, p->direcao_pin, 1);
+			    atraso_us(10); // Atraso necessário ao mudar de direção no DM556, visto no datasheet, mínimo de 5us
+			    velocidade= -velocidade;
+			}
+		}
+
+		if(velocidade != 0)
+		{
+			if(!(p->htim_motor_pwm->Instance->CCER & TIM_CCER_CC3E)) // Evita ficar ativando PWM sempre
+			{
+				HAL_TIM_PWM_Start(p->htim_motor_pwm, p->canal_pwm);
+			}
+			valor = (uint32_t) ((200000 / velocidade) - 1.0f);
+			p->htim_motor_pwm->Instance->ARR = valor;
+			p->htim_motor_pwm->Instance->CCR3 = (uint32_t) valor / 2;
+		}
+		else
+		{
+			if((p->htim_motor_pwm->Instance->CCER & TIM_CCER_CC3E)) // Evita ficar desativando PWM sempre
+			{
+			    HAL_TIM_PWM_Stop(p->htim_motor_pwm, p->canal_pwm);
+			}
+		}
+    	velocidade_anterior = velocidade;
 	}
 }
 
@@ -195,7 +218,7 @@ static void Pendulo_SelfTest(Pendulo_t *p)
 
 	{   // Vai para o centro
         Motor_Velocidade(p, -velocidade);
-        HAL_Delay(1500);
+        HAL_Delay(1500); // levando em conta que a velocidade seja 200 mm/s
         Motor_Velocidade(p, 0);
 	}
 
@@ -221,14 +244,14 @@ void Pendulo_SetaPID(Pendulo_t *p, float kp, float ki, float kd)
 // Inicia SWINGUP
 void Pendulo_IniciaSwingUp(Pendulo_t *p)
 {
-    p->estado = PENDULO_SWINGUP;
+    p->estado = PENDULO_CONTROLE;
 }
 
 
 //Parar o pêndulo
 void Pendulo_Parar(Pendulo_t *p)
 {
-	HAL_TIM_PWM_Stop(p->htim_motor_pwm, p->canal_pwm);
+	Motor_Velocidade(p, 0);
     p->estado = PENDULO_ERRO;
 }
 
@@ -277,11 +300,7 @@ static void Pendulo_Controle(Pendulo_t *p)
  */
 static void Pendulo_AtualizaAngulo(Pendulo_t *p)
 {
-    /*
-     * Converter encoder em ângulo
-     */
-
-    p->angulo = (float)p->encoder / 27.777778f;
+    p->angulo = (float)p->encoder / 27.777778f; // 10000 contages em 360° = 27.7
 }
 
 

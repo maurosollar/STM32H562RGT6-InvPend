@@ -46,6 +46,7 @@
 
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim4;
 TIM_HandleTypeDef htim5;
 
 UART_HandleTypeDef huart4;
@@ -78,12 +79,22 @@ static void MX_UART4_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM5_Init(void);
+static void MX_TIM4_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+/**
+ * @brief Rotina de atraso em ms, lembrar como o Timer 4 é de 16 bits, o atraso máximo é 65milisegundos
+ */
+void atraso_us(uint32_t us)
+{
+    __HAL_TIM_SET_COUNTER(&htim4,0); // Zera contador
+    while(__HAL_TIM_GET_COUNTER(&htim4) < us);
+ }
 
 /**
  * @brief Ajusta PID com dados recebido do simulador no PC, normlamente de 0 a 99
@@ -196,9 +207,11 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM3_Init();
   MX_TIM5_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL); // Inicia encoder
   HAL_UART_Receive_IT(&huart4, rx_buffer, 3); // Gera interrupção após UART preencher buffer com 3º bytes
+  HAL_TIM_Base_Start(&htim4);
 
   // Inicializa GPIOs
   HAL_GPIO_WritePin(DIR_GPIO_Port, DIR_Pin, 1); // Motor 0 = Anti-horário, carro direita / 1 = Horário, carro esquerda
@@ -456,6 +469,51 @@ static void MX_TIM3_Init(void)
   /* USER CODE BEGIN TIM3_Init 2 */
 
   /* USER CODE END TIM3_Init 2 */
+
+}
+
+/**
+  * @brief TIM4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM4_Init(void)
+{
+
+  /* USER CODE BEGIN TIM4_Init 0 */
+
+  /* USER CODE END TIM4_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM4_Init 1 */
+
+  /* USER CODE END TIM4_Init 1 */
+  htim4.Instance = TIM4;
+  htim4.Init.Prescaler = 250-1;
+  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim4.Init.Period = 65535;
+  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM4_Init 2 */
+
+  /* USER CODE END TIM4_Init 2 */
 
 }
 
