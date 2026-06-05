@@ -8,9 +8,9 @@ extern "C" {
 #include "main.h"
 #include "stdint.h"
 
-// Atenção, biblioteca exige os elementos abaixo no main.c
 extern uint32_t tempo;
 extern void atraso_us(uint32_t us);
+
 
 typedef enum // Estados
 {
@@ -50,12 +50,14 @@ typedef struct
 
 } Pendulo_t;
 
+
 typedef enum
 {
 	 Chaves_abertas = 0,
 	 Chave_direita_fechada,
 	 Chave_esquerda_fechada
 } EstadoChave_t;
+
 
 /**
  * @brief Protótipos das funções públicas

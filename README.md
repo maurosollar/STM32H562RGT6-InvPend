@@ -202,7 +202,7 @@ Pinout & Configuration
         Parameters Settings
           Counter Settings
             Prescaler (PSC - 16 bits value): 250-1 (Então o timer incrementa a cada 1 MHZ)
-            Counter Period: 1000-1 ( 1us * 1000 = 1ms)
+            Counter Period: 1000000-1 ( 1us * 1000000 = 1Hz) Alterado via software do pêndulo
             auto-reload preload: Enable ( o valor colocado no ARR via software prevalecerá na próxima contagem)
             Obs.: FreqPWM = clktim / (prescaler * ARR) no caso acima = 1KHz
                   Counter Period será alterado no software

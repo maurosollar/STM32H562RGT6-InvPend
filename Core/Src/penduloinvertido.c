@@ -160,6 +160,10 @@ static void Motor_Velocidade(Pendulo_t *p, int16_t velocidade)
 				HAL_TIM_PWM_Start(p->htim_motor_pwm, p->canal_pwm);
 			}
 			valor = (uint32_t) ((200000 / velocidade) - 1.0f);
+		    if(p->htim_motor_pwm->Instance->CNT >= valor) //Para evitar problema do CNT ser maior que o ARR
+		    {
+		    	p->htim_motor_pwm->Instance->CNT = 0;
+		    }
 			p->htim_motor_pwm->Instance->ARR = valor;
 			p->htim_motor_pwm->Instance->CCR3 = (uint32_t) valor / 2;
 		}
