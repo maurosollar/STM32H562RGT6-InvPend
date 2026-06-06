@@ -12,15 +12,15 @@ static EstadoChave_t EstadoChave;
 
 
 // Funções privadas
-static void Pendulo_SelfTest(Pendulo_t *p);
-static void Pendulo_SwingUp(Pendulo_t *p);
-static void Pendulo_Controle(Pendulo_t *p);
-static void Pendulo_AtualizaAngulo(Pendulo_t *p);
-static void Pendulo_AtualizaVelocidade(Pendulo_t *p);
+static void SelfTest(Pendulo_t *p);
+static void SwingUp(Pendulo_t *p);
+static void Controle(Pendulo_t *p);
+static void AtualizaAngulo(Pendulo_t *p);
+static void AtualizaVelocidade(Pendulo_t *p);
 static void Motor_Velocidade(Pendulo_t *p, int16_t velocidade);
-static void Pendulo_Parar(Pendulo_t *p);
+static void Parar(Pendulo_t *p);
 static EstadoChave_t Chave_Fim_Curso(Pendulo_t *p);
-
+static int16_t Posicao_Carro(Pendulo_t *p);
 
 /**
  * @brief Inicialização, basicamente passa as referências e inicia variáveis da estrutura
@@ -29,7 +29,8 @@ void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor_pwm, uint32_
                         GPIO_TypeDef *chave_dir_port, uint16_t chave_dir_pin,
                         GPIO_TypeDef *chave_esq_port, uint16_t chave_esq_pin,
 	                	GPIO_TypeDef *direcao_port, short unsigned int direcao_pin,
-						TIM_HandleTypeDef *htim_conta_pulsos)
+						TIM_HandleTypeDef *htim_conta_pulsos,
+						TIM_HandleTypeDef *htim_encoder)
 {
     p->encoder = 0;
     p->angulo = 0.0f;
@@ -43,6 +44,7 @@ void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor_pwm, uint32_
 
     p->htim_motor_pwm = htim_motor_pwm;
     p->htim_conta_pulsos = htim_conta_pulsos;
+    p->htim_encoder = htim_encoder;
     p->canal_pwm = canal_pwm;
     p->chave_dir_port = chave_dir_port;
     p->chave_dir_pin = chave_dir_pin;
@@ -67,29 +69,34 @@ void Pendulo_AtualizaPendulo(Pendulo_t *p)
 	{
 		p->estado = PENDULO_ERRO;
 	}
-    Pendulo_AtualizaAngulo(p);
-    Pendulo_AtualizaVelocidade(p);
+    AtualizaAngulo(p);
+    AtualizaVelocidade(p);
 
     switch(p->estado)
     {
         case PENDULO_SELFTEST:
-            Pendulo_SelfTest(p);
+            SelfTest(p);
         break;
 
         case PENDULO_SWINGUP:
-            Pendulo_SwingUp(p);
+            SwingUp(p);
             break;
 
         case PENDULO_CONTROLE:
-            Pendulo_Controle(p);
+            Controle(p);
             break;
 
         case PENDULO_ERRO:
-            Pendulo_Parar(p);
+            Parar(p);
             break;
     }
 }
 
+
+int16_t PosicaoCarro(Pendulo_t *p)
+{
+	return (int16_t) 8500 - p->htim_conta_pulsos->Instance->CNT;
+}
 
 /**
  * @brief Verifica estado das chaves de fim de curso
@@ -197,10 +204,12 @@ static void Motor_Velocidade(Pendulo_t *p, int16_t velocidade)
 
 
 // Selftest
-static void Pendulo_SelfTest(Pendulo_t *p)
+static void SelfTest(Pendulo_t *p)
 {
 	int16_t velocidade;
 	velocidade = 200; // mm/s
+
+	p->estado = PENDULO_SWINGUP;
 
 	if(Chave_Fim_Curso(p) == Chaves_abertas)
 	{
@@ -236,19 +245,43 @@ static void Pendulo_SelfTest(Pendulo_t *p)
 	    while(Chave_Fim_Curso(p) != Chave_direita_fechada);
 	    Motor_Velocidade(p, 0);
 	}
+
+    // Acertado o valor inicial do contador de pulsos
     p->htim_conta_pulsos->Instance->CNT = 10000;
+
     // Vai para o centro
     Motor_Velocidade(p, -velocidade);
-    while(p->htim_conta_pulsos->Instance->CNT > 8500);
+    // Como o guia linear tem 600mm de área útil e se encontra na direita, retorna até 1500 pulsos a esquerda,
+    // (cada puslo = 0.2mm) 1500 * 0,2mm = 300mm resultando o meio do barramento
+    while(p->htim_conta_pulsos->Instance->CNT > 8500)
+    {
+    	if(Chave_Fim_Curso(p) == Chave_esquerda_fechada)
+    	{
+    		p->estado = PENDULO_ERRO;
+    	}
+    }
+    Motor_Velocidade(p, 0);
+	// CNT=8500 meio do barramento, a partir daqui a função "PosicaoCarro"
+	// Retorna -1500(Carro todo a esquerda) 0(Centro) +1500(Carro todo a direita)
 
-    //HAL_Delay(1500); // levando em conta que a velocidade seja 200 mm/s
-	Motor_Velocidade(p, 0);
+    // Aguarda pêndulo parar. Futuramente fazer um amortecedor por software.
+    int i = 0, encoder_anterior = 0;
+    while(i < 10)
+    {
+    	if(encoder_anterior == p->htim_encoder->Instance->CNT)
+		{
+			i++;
+		}
+    	encoder_anterior = p->htim_encoder->Instance->CNT;
+    	HAL_Delay(100);
+    }
+    tempo= 111;
 
-    p->estado = PENDULO_SWINGUP;
 }
 
-// Seta encoder
-void Pendulo_PegaValorEncoder(Pendulo_t *p, int32_t encoder)
+
+// Atualiza Valor Encoder
+void Pendulo_AtualizaValorEncoder(Pendulo_t *p, int32_t encoder)
 {
     p->encoder = encoder;
 }
@@ -264,21 +297,25 @@ void Pendulo_SetaPID(Pendulo_t *p, float kp, float ki, float kd)
 
 
 // Inicia SWINGUP
-void Pendulo_IniciaSwingUp(Pendulo_t *p)
+void IniciaSwingUp(Pendulo_t *p)
 {
+
+	Motor_Velocidade(p, 0);
+	PosicaoCarro(p);
+
     p->estado = PENDULO_CONTROLE;
 }
 
 
 //Parar o pêndulo
-void Pendulo_Parar(Pendulo_t *p)
+void Parar(Pendulo_t *p)
 {
 	Motor_Velocidade(p, 0);
     p->estado = PENDULO_ERRO;
 }
 
 // SWING-UP
-static void Pendulo_SwingUp(Pendulo_t *p)
+static void SwingUp(Pendulo_t *p)
 {
     /*
      * ALGORITMO SWING-UP
@@ -292,7 +329,7 @@ static void Pendulo_SwingUp(Pendulo_t *p)
 
 
 // Controle PID
-static void Pendulo_Controle(Pendulo_t *p)
+static void Controle(Pendulo_t *p)
 {
     float setpoint = 0.0f;
     float erro;
@@ -320,7 +357,7 @@ static void Pendulo_Controle(Pendulo_t *p)
 /**
  * @brief Calcula ângulo do pêndulo
  */
-static void Pendulo_AtualizaAngulo(Pendulo_t *p)
+static void AtualizaAngulo(Pendulo_t *p)
 {
     p->angulo = (float)p->encoder / 27.777778f; // 10000 contages em 360° = 27.7
 }
@@ -329,7 +366,7 @@ static void Pendulo_AtualizaAngulo(Pendulo_t *p)
 /**
  * @brief Velocidade angular do pêndulo
  */
-static void Pendulo_AtualizaVelocidade(Pendulo_t *p)
+static void AtualizaVelocidade(Pendulo_t *p)
 {
     static float angulo_anterior = 0.0f;
 

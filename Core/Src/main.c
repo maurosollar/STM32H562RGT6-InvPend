@@ -242,11 +242,13 @@ int main(void)
  * @param DIR_GPIO_Port - Direção do motor
  * @param DIR_Pin - Pino associado
  * @param htim1 - Contador de pulsos
+ * @param htim2 - Encoder
  */
   Pendulo_Inicializa(&pendulo, &htim5, TIM_CHANNEL_3,
 		             Chave_Dir_GPIO_Port, Chave_Dir_Pin,
 					 Chave_Esq_GPIO_Port, Chave_Esq_Pin,
-					 DIR_GPIO_Port, DIR_Pin, &htim1);
+					 DIR_GPIO_Port, DIR_Pin,
+					 &htim1, &htim2);
 
   HAL_TIM_Base_Start_IT(&htim3); // Inicia interrupção para o controle do pêndulo
 
@@ -257,7 +259,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	if(flag_controle == 1)
 	{
-		Pendulo_PegaValorEncoder(&pendulo, TIM2->CNT);
+		Pendulo_AtualizaValorEncoder(&pendulo, TIM2->CNT);
         Pendulo_AtualizaPendulo(&pendulo);
 		flag_controle = 0;
 	}

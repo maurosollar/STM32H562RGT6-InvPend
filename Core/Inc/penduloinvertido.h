@@ -47,6 +47,7 @@ typedef struct
     TIM_HandleTypeDef *htim_motor_pwm;
     uint32_t canal_pwm;
     TIM_HandleTypeDef *htim_conta_pulsos;
+    TIM_HandleTypeDef *htim_encoder;
     PenduloEstado_t estado;
 
 } Pendulo_t;
@@ -67,9 +68,10 @@ void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor_pwm, uint32_
 		                GPIO_TypeDef *chave_dir_port, uint16_t chave_dir_pin,
 		                GPIO_TypeDef *chave_esq_port, uint16_t chave_esq_pin,
 						GPIO_TypeDef *direcao_port, short unsigned int direcao_pin,
-						TIM_HandleTypeDef *htim_conta_pulsos);
+						TIM_HandleTypeDef *htim_conta_pulsos,
+						TIM_HandleTypeDef *htim_encoder);
 void Pendulo_AtualizaPendulo(Pendulo_t *pendulo);
-void Pendulo_PegaValorEncoder(Pendulo_t *pendulo, int32_t encoder);
+void Pendulo_AtualizaValorEncoder(Pendulo_t *pendulo, int32_t encoder);
 void Pendulo_SetaPID(Pendulo_t *pendulo, float kp, float ki, float kd);
 
 
