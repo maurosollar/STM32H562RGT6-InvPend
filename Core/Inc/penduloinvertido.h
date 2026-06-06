@@ -36,7 +36,7 @@ typedef struct
 
     float angulo;
     float velocidade;
-    uint16_t posicao_carro;
+    int16_t posicao_carro;
 
     uint32_t pulso_motor;
 
