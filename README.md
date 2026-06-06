@@ -141,7 +141,7 @@ Pinout & Configuration
         Mode: Asynchronous
       Configuration
         Parameters
-          Baud Rate: 115200
+          Baud Rate: 460800
           Word Length: 8 Bits
           Parity: None
           Stop Bits: 1
