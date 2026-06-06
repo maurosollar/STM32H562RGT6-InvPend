@@ -164,7 +164,7 @@ System Core
        Destination Data Setting
          Destination Address increment After Transfer: Disable
          Data Width: Byte
-Obs.: Foram ativados PA12=UART4_TX e PA11=UART4_RX
+Obs.: Foram ativados PC10=UART4_TX e PA11=UART4_RX
 
 === Configurando Timer para interrupção por software de 1 ms ===
 Pinout & Configuration
