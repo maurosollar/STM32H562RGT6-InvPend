@@ -222,7 +222,17 @@ Pinout & Configuration
           GPIO mode: Alternate Function Open Drain
           Maximum output speed: High
  
- 
+=== Configurando Timer para contagem de pulsos gerados pelo PWM, possibilitando ter posicionamento do carro ===
+Pinout & Configuration
+  Timers
+    TIM1
+      Mode
+        Clock Source: ETR2   (Ativa External Trigger 2, associando a GPIO PA12 = TIM1_ETR)
+      Configuration
+        Parameters Settings
+          Prescaler (PSC - 16 bits value): 0
+          Counter Period: 65535
+
           
 No STM32CubeIDE:     
 Ativar float format para para formatação com sprintf:

@@ -28,12 +28,13 @@ static EstadoChave_t Chave_Fim_Curso(Pendulo_t *p);
 void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor_pwm, uint32_t canal_pwm,
                         GPIO_TypeDef *chave_dir_port, uint16_t chave_dir_pin,
                         GPIO_TypeDef *chave_esq_port, uint16_t chave_esq_pin,
-	                	GPIO_TypeDef *direcao_port, short unsigned int direcao_pin)
+	                	GPIO_TypeDef *direcao_port, short unsigned int direcao_pin,
+						TIM_HandleTypeDef *htim_conta_pulsos)
 {
     p->encoder = 0;
     p->angulo = 0.0f;
     p->velocidade = 0.0f;
-    p->posicao_carro = 0.0f;
+    p->posicao_carro = 0;
     p->pulso_motor = 0;
 
     p->kp = 0.0f;
@@ -41,6 +42,7 @@ void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor_pwm, uint32_
     p->kd = 0.0f;
 
     p->htim_motor_pwm = htim_motor_pwm;
+    p->htim_conta_pulsos = htim_conta_pulsos;
     p->canal_pwm = canal_pwm;
     p->chave_dir_port = chave_dir_port;
     p->chave_dir_pin = chave_dir_pin;
@@ -135,6 +137,7 @@ static void Motor_Velocidade(Pendulo_t *p, int16_t velocidade)
 {
 	uint32_t valor;
 	static int16_t velocidade_anterior = 0;
+	uint32_t contagem_anterior;
 
     // A T E N Ç Ã O: Verificar o tempo de acionamento (5us) da Direção do motor, tratar no início e no final
 	// Analisar melhor, estou tratando somente o atraso depois da troca de direção e não antes
@@ -146,6 +149,9 @@ static void Motor_Velocidade(Pendulo_t *p, int16_t velocidade)
 			if(HAL_GPIO_ReadPin(p->direcao_port, p->direcao_pin) == GPIO_PIN_SET) // Evita mudar sempre
 			{
 			    HAL_GPIO_WritePin(p->direcao_port, p->direcao_pin, 0); // Carro para direira
+			    contagem_anterior = p->htim_conta_pulsos->Instance->CNT;
+			    p->htim_conta_pulsos->Instance->CR1 &= ~TIM_CR1_DIR; // Contagem crescente
+			    p->htim_conta_pulsos->Instance->CNT = contagem_anterior;
 			    atraso_us(7); // Atraso necessário ao mudar de direção no DM556, visto no datasheet, mínimo de 5us
 			}
 		}
@@ -154,6 +160,9 @@ static void Motor_Velocidade(Pendulo_t *p, int16_t velocidade)
 			if(HAL_GPIO_ReadPin(p->direcao_port, p->direcao_pin) == GPIO_PIN_RESET) // Evita mudar sempre
 			{
 			    HAL_GPIO_WritePin(p->direcao_port, p->direcao_pin, 1); // Carro para esquerda
+			    contagem_anterior = p->htim_conta_pulsos->Instance->CNT;
+			    p->htim_conta_pulsos->Instance->CR1 |= TIM_CR1_DIR; // Contagem decrescente
+			    p->htim_conta_pulsos->Instance->CNT = contagem_anterior;
 			    atraso_us(7); // Atraso necessário ao mudar de direção no DM556, visto no datasheet, mínimo de 5us
 			}
 		}
@@ -227,28 +236,13 @@ static void Pendulo_SelfTest(Pendulo_t *p)
 	    while(Chave_Fim_Curso(p) != Chave_direita_fechada);
 	    Motor_Velocidade(p, 0);
 	}
+    p->htim_conta_pulsos->Instance->CNT = 10000;
+    // Vai para o centro
+    Motor_Velocidade(p, -velocidade);
+    while(p->htim_conta_pulsos->Instance->CNT > 8500);
 
-	{   // Vai para o centro
-        Motor_Velocidade(p, -velocidade);
-        HAL_Delay(1500); // levando em conta que a velocidade seja 200 mm/s
-        Motor_Velocidade(p, 0);
-	}
-
-	velocidade = 100;
-	while(1)
-	{
-		{   // Vai para o centro
-			Motor_Velocidade(p, velocidade);
-			HAL_Delay(100); // levando em conta que a velocidade seja 200 mm/s
-			//Motor_Velocidade(p, 0);
-		}
-		{   // Vai para o centro
-			Motor_Velocidade(p, -velocidade);
-			HAL_Delay(100); // levando em conta que a velocidade seja 200 mm/s
-			//Motor_Velocidade(p, 0);
-		}
-	}
-
+    //HAL_Delay(1500); // levando em conta que a velocidade seja 200 mm/s
+	Motor_Velocidade(p, 0);
 
     p->estado = PENDULO_SWINGUP;
 }

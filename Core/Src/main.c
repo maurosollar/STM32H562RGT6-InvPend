@@ -44,6 +44,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 
+TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
@@ -80,6 +81,7 @@ static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM5_Init(void);
 static void MX_TIM4_Init(void);
+static void MX_TIM1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -208,6 +210,7 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM5_Init();
   MX_TIM4_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL); // Inicia encoder
   HAL_UART_Receive_IT(&huart4, rx_buffer, 3); // Gera interrupção após UART preencher buffer com 3º bytes
@@ -218,7 +221,7 @@ int main(void)
   HAL_GPIO_WritePin(ENA_GPIO_Port, ENA_Pin, 1); // Motor 1 = Habilitado / 0 = desabilitado
   HAL_GPIO_WritePin(Time_Int_GPIO_Port, Time_Int_Pin, 0); // Para análise com osciloscópio
   HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 0); // Para análise com osciloscópio
-
+  HAL_TIM_Base_Start(&htim1); //Inicia contagem de pulsos PWM do motor de passo
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -238,11 +241,12 @@ int main(void)
  * @param Chave_Esq_Pin - Pino associado
  * @param DIR_GPIO_Port - Direção do motor
  * @param DIR_Pin - Pino associado
+ * @param htim1 - Contador de pulsos
  */
   Pendulo_Inicializa(&pendulo, &htim5, TIM_CHANNEL_3,
 		             Chave_Dir_GPIO_Port, Chave_Dir_Pin,
 					 Chave_Esq_GPIO_Port, Chave_Esq_Pin,
-					 DIR_GPIO_Port, DIR_Pin);
+					 DIR_GPIO_Port, DIR_Pin, &htim1);
 
   HAL_TIM_Base_Start_IT(&htim3); // Inicia interrupção para o controle do pêndulo
 
@@ -375,6 +379,56 @@ static void MX_ICACHE_Init(void)
   /* USER CODE BEGIN ICACHE_Init 2 */
 
   /* USER CODE END ICACHE_Init 2 */
+
+}
+
+/**
+  * @brief TIM1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM1_Init(void)
+{
+
+  /* USER CODE BEGIN TIM1_Init 0 */
+
+  /* USER CODE END TIM1_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM1_Init 1 */
+
+  /* USER CODE END TIM1_Init 1 */
+  htim1.Instance = TIM1;
+  htim1.Init.Prescaler = 0;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 65535;
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim1.Init.RepetitionCounter = 0;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_ETRMODE2;
+  sClockSourceConfig.ClockPolarity = TIM_CLOCKPOLARITY_NONINVERTED;
+  sClockSourceConfig.ClockPrescaler = TIM_CLOCKPRESCALER_DIV1;
+  sClockSourceConfig.ClockFilter = 0;
+  if (HAL_TIM_ConfigClockSource(&htim1, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterOutputTrigger2 = TIM_TRGO2_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM1_Init 2 */
+
+  /* USER CODE END TIM1_Init 2 */
 
 }
 
