@@ -305,7 +305,7 @@ SW4 = off = Half Current (Quando motor tiver parado, é energizado com meia corr
             salvo se ENA estiver desativado, neste caso o motor roda livre)
 
 SW5 = off -\
-SW6 = on    \ 400 pulsos por revolução
+SW6 = off   \ 1600 pulsos por revolução
 SW7 = on    /
 SW8 = on  -/
 
@@ -318,14 +318,14 @@ PA10 = ENA-
 
 ```   
 
-```
+
 Polia GT2 tem 2mm por dente, então como utilizo de 40 dentes, a cada volta tem um deslocamento de 80mm
 Motor que utilizo são 200 passos/volta
-1 passo -> 80/200 = 0,4mm, mas como o driver esta configurado 400 pulsos/volta, então 0x20mm/pulso
+1 passo -> 80/200 = 0,4mm, mas como o driver esta configurado 1600 pulsos/volta, então 0,05mm/pulso
 
 Peso da haste do pêndulo = 44.2g
 Flange do pêndulo  = 9.1g
 
-```
+
 
 

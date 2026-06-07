@@ -57,7 +57,7 @@ DMA_HandleTypeDef handle_GPDMA1_Channel0;
 uint32_t  tempo;            // Variável para testes de tempo
 uint32_t  last_rx_time = 0; // Controle de tempo para expirar dado recebido pela UART
 uint8_t   rx_buffer[3];     // Buffer do RX da UART
-char      tx_buffer[20];    // Buffer do TX da UART
+char      tx_buffer[35];    // Buffer do TX da UART
 int32_t   excede_envio; // Variável é incrementada caso tenha dados de simulação para enviar
                         // via serial antes de terminar o anterior (Serial 460800bps)
                         // significa que não esta dando tempo de enviar novos dados
@@ -108,7 +108,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	{
 		last_rx_time = HAL_GetTick();
 
-        Pendulo_SetaPID(&pendulo, (float) rx_buffer[0] / 100,
+        Pendulo_SetaPID(&pendulo, (float) rx_buffer[0],
         		                  (float) rx_buffer[1] / 100,
 						          (float) rx_buffer[2] / 100);
 	}
@@ -147,7 +147,12 @@ void Envia_simulador()
 	if(uart_tx_busy == 0)
 	{
 		uart_tx_busy = 1;
-		sprintf((char*)tx_buffer, "ENC:%.1f\r\n", (float) (pendulo.encoder / 27.777778f) - 180);
+		// Ângulo, Velocidade angular, posição do carro, velocidade do carro
+		sprintf((char*)tx_buffer, "%.1f;%.1f;%.1d;%.1ld\r\n",
+				pendulo.angulo_pendulo,
+				pendulo.velocidade_angular_pendulo,
+				pendulo.posicao_carro,
+				pendulo.velocidade_carro);
 		HAL_UART_Transmit_DMA(&huart4, (uint8_t*)tx_buffer, strlen(tx_buffer));
 	} else {
 		excede_envio++;

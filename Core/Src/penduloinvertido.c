@@ -97,7 +97,7 @@ void Pendulo_AtualizaPendulo(Pendulo_t *p)
 
 void AtualizaPosicaoCarro(Pendulo_t *p)
 {
-	p->posicao_carro = (int16_t) (p->htim_conta_pulsos->Instance->CNT - 8500);
+	p->posicao_carro = (int16_t) (p->htim_conta_pulsos->Instance->CNT - 20000);
 }
 
 /**
@@ -135,8 +135,8 @@ static EstadoChave_t ChaveFimCurso(Pendulo_t *p)
  *                   2.5KHz = 400 Motor já não aceita alterações bruscas de velocidade
  *
  *        Sabendo que o aparelho de experimento tem uma polia GT2 de 40 dentes de 2mm cada,
- *        motor de 200 passos por volta com o controlador fazendo 1/2 passo, resultando 400 passos
- *        por volta. 40 dentes * 2mm = 80mm por volta / 400 passos = 0.2mm por passo.
+ *        motor de 200 passos por volta com o controlador fazendo 1/8 passo, resultando 1600 passos
+ *        por volta. 40 dentes * 2mm = 80mm por volta / 1600 passos = 0.05mm por passo.
  *
  * @param Estrutura Pendulo_t
  * @param velocidade em mm/s
@@ -186,7 +186,8 @@ static void VelocidadeMotor(Pendulo_t *p, int16_t velocidade)
 				{
 					HAL_TIM_PWM_Start(p->htim_motor_pwm, p->canal_pwm);
 				}
-				valor = (uint32_t) ((200000 / abs(velocidade)) - 1.0f);
+				//valor = (uint32_t) ((200000 / abs(velocidade)) - 1.0f); // Driver em 400 pulsos
+				valor = (uint32_t) ((50000 / abs(velocidade)) - 1.0f); // Driver em 1600 pulsos
 				if(p->htim_motor_pwm->Instance->CNT >= valor) //Para evitar problema do CNT ser maior que o ARR
 				{
 					p->htim_motor_pwm->Instance->CNT = 0;
@@ -225,7 +226,6 @@ static void SelfTest(Pendulo_t *p)
 
 	if(ChaveFimCurso(p) == Chave_direita_fechada)
 	{
-
 	    // Corre carro para esquerda até abrir a chave e desloca mais 100ms
 		VelocidadeMotor(p, -velocidade);
 	    while(ChaveFimCurso(p) != Chaves_abertas);
@@ -236,7 +236,6 @@ static void SelfTest(Pendulo_t *p)
 		VelocidadeMotor(p, velocidade);
 	    while(ChaveFimCurso(p) != Chave_direita_fechada);
 	    VelocidadeMotor(p, 0);
-
 	}
 
 	if(ChaveFimCurso(p) == Chave_esquerda_fechada)
@@ -248,13 +247,13 @@ static void SelfTest(Pendulo_t *p)
 	}
 
     // Acertado o valor inicial do contador de pulsos
-    p->htim_conta_pulsos->Instance->CNT = 10000;
+    p->htim_conta_pulsos->Instance->CNT = 20000;
 
     // Vai para o centro
     VelocidadeMotor(p, -velocidade);
     // Como o guia linear tem 600mm de área útil e se encontra na direita, retorna até 1500 pulsos a esquerda,
-    // (cada puslo = 0.2mm) 1500 * 0,2mm = 300mm resultando o meio do barramento
-    while(p->htim_conta_pulsos->Instance->CNT > 8500)
+    // (cada puslo = 0.05mm) 6000 * 0,05mm = 300mm resultando o meio do barramento
+    while(p->htim_conta_pulsos->Instance->CNT > 14000)
     {
     	if(ChaveFimCurso(p) == Chave_esquerda_fechada)
     	{
@@ -262,8 +261,11 @@ static void SelfTest(Pendulo_t *p)
     	}
     }
     VelocidadeMotor(p, 0);
-	// CNT=8500 meio do barramento, a partir daqui a função "AtualizaPosicaoCarro"
-	// Retorna -1500(Carro todo a esquerda) 0(Centro) +1500(Carro todo a direita)
+    // Assumindo área útil de segurança para a posição do carro são de 500mm, ficando 250mm para cada lado
+    // Vamos zerar o carro aqui
+    p->htim_conta_pulsos->Instance->CNT = 20000;
+	// CNT=20000 meio do barramento, a partir daqui a função "AtualizaPosicaoCarro"
+	// Retorna -5000(Carro todo a esquerda) 0(Centro) +5000(Carro todo a direita)
 }
 
 
@@ -319,13 +321,14 @@ static void SwingUp(Pendulo_t *p)
 static void Controle(Pendulo_t *p)
 {
     const float dt = 0.001f;         // 0.001 1 ms
-    const float velocidade_max = 300.0f; // mm/s
+    const float velocidade_max = 500.0f; // mm/s
 
     float erro;
     float derivada;
     float saida_pid;
 
-    erro = -p->angulo_pendulo; // setpoint = 0°
+    erro = 0 - p->angulo_pendulo; // setpoint = 0°
+    //erro = 5000 - p->encoder; // setpoint = 0°
 
     // Integral
     integral += erro * dt;
