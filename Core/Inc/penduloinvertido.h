@@ -34,11 +34,10 @@ typedef struct
     GPIO_TypeDef *direcao_port;
     short unsigned int direcao_pin;
 
-    float angulo;
-    float velocidade;
+    float angulo_pendulo;
+    float velocidade_angular_pendulo;
     int16_t posicao_carro;
-
-    uint32_t pulso_motor;
+    uint32_t velocidade_carro;
 
     float kp;
     float ki;

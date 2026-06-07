@@ -15,8 +15,8 @@ static EstadoChave_t EstadoChave;
 static void SelfTest(Pendulo_t *p);
 static void SwingUp(Pendulo_t *p);
 static void Controle(Pendulo_t *p);
-static void AtualizaAngulo(Pendulo_t *p);
-static void AtualizaVelocidade(Pendulo_t *p);
+static void AtualizaAnguloPendulo(Pendulo_t *p);
+static void AtualizaVelocidadePendulo(Pendulo_t *p);
 static void VelocidadeMotor(Pendulo_t *p, int16_t velocidade);
 static void Parar(Pendulo_t *p);
 static EstadoChave_t ChaveFimCurso(Pendulo_t *p);
@@ -33,14 +33,14 @@ void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor_pwm, uint32_
 						TIM_HandleTypeDef *htim_encoder)
 {
     p->encoder = 0;
-    p->angulo = 0.0f;
-    p->velocidade = 0.0f;
+    p->angulo_pendulo = 0.0f;
+    p->velocidade_angular_pendulo = 0.0f;
     p->posicao_carro = 0;
-    p->pulso_motor = 0;
+    p->velocidade_carro = 0;
 
-    p->kp = 0.8f;
-    p->ki = 0.2f;
-    p->kd = 0.1f;
+    p->kp = 20.0f;
+    p->ki = 0.0f;
+    p->kd = 0.2f;
 
     p->htim_motor_pwm = htim_motor_pwm;
     p->htim_conta_pulsos = htim_conta_pulsos;
@@ -70,8 +70,8 @@ void Pendulo_AtualizaPendulo(Pendulo_t *p)
 	{
 		p->estado = PENDULO_ERRO;
 	}
-    AtualizaAngulo(p);
-    AtualizaVelocidade(p);
+    AtualizaAnguloPendulo(p);
+    AtualizaVelocidadePendulo(p);
     AtualizaPosicaoCarro(p);
 
     switch(p->estado)
@@ -148,6 +148,8 @@ static void VelocidadeMotor(Pendulo_t *p, int16_t velocidade)
 	static int16_t velocidade_anterior = 0;
 	uint32_t contagem_anterior;
 
+	p->velocidade_carro = velocidade;
+
     // A T E N Ç Ã O: Verificar o tempo de acionamento (5us) da Direção do motor, tratar no início e no final
 	// Analisar melhor, estou tratando somente o atraso depois da troca de direção e não antes
 	// antes também tenho que desativar o pwm e ai sim alterar a direção.
@@ -219,18 +221,15 @@ static void SelfTest(Pendulo_t *p)
 		VelocidadeMotor(p, velocidade);
 	    while(ChaveFimCurso(p) != Chave_direita_fechada);
 	    VelocidadeMotor(p, 0);
-	    // Corre carro para esquerda
-		VelocidadeMotor(p, -velocidade);
-	    while(ChaveFimCurso(p) != Chave_esquerda_fechada);
-	    VelocidadeMotor(p, 0);
 	}
 
 	if(ChaveFimCurso(p) == Chave_direita_fechada)
 	{
 
-	    // Corre carro para esquerda
+	    // Corre carro para esquerda até abrir a chave e desloca mais 100ms
 		VelocidadeMotor(p, -velocidade);
-	    while(ChaveFimCurso(p) != Chave_esquerda_fechada);
+	    while(ChaveFimCurso(p) != Chaves_abertas);
+	    HAL_Delay(100);
 
 	    VelocidadeMotor(p, 0);
 		// Corre carro para direira
@@ -288,8 +287,8 @@ void Pendulo_SetaPID(Pendulo_t *p, float kp, float ki, float kd)
 void IniciaSwingUp(Pendulo_t *p)
 {
 
-	VelocidadeMotor(p, 0);
-	AtualizaPosicaoCarro(p);
+	//VelocidadeMotor(p, 0);
+	//AtualizaPosicaoCarro(p);
 
     p->estado = PENDULO_CONTROLE;
 }
@@ -309,7 +308,7 @@ static void SwingUp(Pendulo_t *p)
      * ALGORITMO SWING-UP
      */
 
-    if(fabsf(p->angulo) < 5.0f)
+    if(fabsf(p->angulo_pendulo) < 15.0f)
     {
         p->estado = PENDULO_CONTROLE;
     }
@@ -319,26 +318,54 @@ static void SwingUp(Pendulo_t *p)
 // Controle PID
 static void Controle(Pendulo_t *p)
 {
-    float setpoint = 0.0f;
+    const float dt = 0.001f;         // 0.001 1 ms
+    const float velocidade_max = 300.0f; // mm/s
+
     float erro;
     float derivada;
+    float saida_pid;
 
-    erro = setpoint - p->angulo;
-    integral += erro * 0.001f;
-    derivada = (erro - erro_anterior) / 0.001f; // 1ms
+    erro = -p->angulo_pendulo; // setpoint = 0°
 
-    p->pulso_motor =
+    // Integral
+    integral += erro * dt;
+
+    // Anti-windup
+    if(integral > 100.0f)
+        integral = 100.0f;
+
+    if(integral < -100.0f)
+        integral = -100.0f;
+
+    // Derivada
+    derivada = (erro - erro_anterior) / dt;
+
+    // PID
+    saida_pid =
             (p->kp * erro) +
             (p->ki * integral) +
             (p->kd * derivada);
 
+    // Saturação da velocidade
+    if(saida_pid > velocidade_max)
+        saida_pid = velocidade_max;
+
+    if(saida_pid < -velocidade_max)
+        saida_pid = -velocidade_max;
+
     erro_anterior = erro;
-    tempo = p->pulso_motor;
-    VelocidadeMotor(p, (int16_t) -p->pulso_motor);
-    // maior que 30 graus volta para o Swing-UP
-    if(fabsf(p->angulo) > 30.0f)
+
+    // Comando para o motor
+    VelocidadeMotor(p, (int16_t)(-saida_pid));
+
+    // Sai da região de estabilização
+    if(fabsf(p->angulo_pendulo) > 30.0f)
     {
-    	VelocidadeMotor(p, 0);
+        integral = 0.0f;
+        erro_anterior = 0.0f;
+
+        VelocidadeMotor(p, 0);
+
         p->estado = PENDULO_SWINGUP;
     }
 }
@@ -347,22 +374,22 @@ static void Controle(Pendulo_t *p)
 /**
  * @brief Calcula ângulo do pêndulo
  */
-static void AtualizaAngulo(Pendulo_t *p)
+static void AtualizaAnguloPendulo(Pendulo_t *p)
 {
-    p->angulo = (float)p->encoder / 27.777778f; // 10000 contages em 360° = 27.7
-    p->angulo = p->angulo - 180;
+    p->angulo_pendulo = (float)p->encoder / 27.777778f; // 10000 contages em 360° = 27.7
+    p->angulo_pendulo = p->angulo_pendulo - 180;
 }
 
 
 /**
  * @brief Velocidade angular do pêndulo
  */
-static void AtualizaVelocidade(Pendulo_t *p)
+static void AtualizaVelocidadePendulo(Pendulo_t *p)
 {
     static float angulo_anterior = 0.0f;
 
-    p->velocidade =
-            (p->angulo - angulo_anterior) / 0.001f; // 1 ms
+    p->velocidade_angular_pendulo =
+            (p->angulo_pendulo - angulo_anterior) / 0.001f; // 1 ms
 
-    angulo_anterior = p->angulo;
+    angulo_anterior = p->angulo_pendulo;
 }
