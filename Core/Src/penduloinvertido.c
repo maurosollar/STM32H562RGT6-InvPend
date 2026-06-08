@@ -97,7 +97,7 @@ void Pendulo_AtualizaPendulo(Pendulo_t *p)
 
 void AtualizaPosicaoCarro(Pendulo_t *p)
 {
-	p->posicao_carro = (int16_t) (p->htim_conta_pulsos->Instance->CNT - 20000);
+	p->posicao_carro = (int16_t) (p->htim_conta_pulsos->Instance->CNT - 20000) / 20;
 }
 
 /**
@@ -379,7 +379,7 @@ static void Controle(Pendulo_t *p)
  */
 static void AtualizaAnguloPendulo(Pendulo_t *p)
 {
-    p->angulo_pendulo = (float)p->encoder / 27.777778f; // 10000 contages em 360° = 27.7
+    p->angulo_pendulo = ((float)p->encoder * 360.0f) / 10000.0f;
     p->angulo_pendulo = p->angulo_pendulo - 180;
 }
 

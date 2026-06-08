@@ -148,7 +148,7 @@ void Envia_simulador()
 	{
 		uart_tx_busy = 1;
 		// Ângulo, Velocidade angular, posição do carro, velocidade do carro
-		sprintf((char*)tx_buffer, "%.1f;%.1f;%.1d;%.1ld\r\n",
+		sprintf((char*)tx_buffer, "%.1f;%.1f;%d;%ld\r\n",
 				pendulo.angulo_pendulo,
 				pendulo.velocidade_angular_pendulo,
 				pendulo.posicao_carro,
