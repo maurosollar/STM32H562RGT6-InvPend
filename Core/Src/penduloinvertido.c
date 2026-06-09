@@ -40,7 +40,7 @@ void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor_pwm, uint32_
 
     p->kp = 20.0f;
     p->ki = 0.0f;
-    p->kd = 0.2f;
+    p->kd = 0.0001f;
 
     p->htim_motor_pwm = htim_motor_pwm;
     p->htim_conta_pulsos = htim_conta_pulsos;
@@ -90,6 +90,7 @@ void Pendulo_AtualizaPendulo(Pendulo_t *p)
 
         case PENDULO_ERRO:
             Parar(p);
+            p->estado = PENDULO_SELFTEST;
             break;
     }
 }
@@ -188,10 +189,8 @@ static void VelocidadeMotor(Pendulo_t *p, int16_t velocidade)
 				}
 				//valor = (uint32_t) ((200000 / abs(velocidade)) - 1.0f); // Driver em 400 pulsos
 				valor = (uint32_t) ((50000 / abs(velocidade)) - 1.0f); // Driver em 1600 pulsos
-				if(p->htim_motor_pwm->Instance->CNT >= valor) //Para evitar problema do CNT ser maior que o ARR
-				{
-					p->htim_motor_pwm->Instance->CNT = 0;
-				}
+				//p->htim_motor_pwm->Instance->CNT = 0; // Verificar se é melhor deixar o CNT completar sua contagem para então zerar
+				                                        // zerando ficou ruim
 				p->htim_motor_pwm->Instance->ARR = valor;
 				p->htim_motor_pwm->Instance->CCR3 = (uint32_t) valor / 2;
 			}
@@ -321,14 +320,15 @@ static void SwingUp(Pendulo_t *p)
 static void Controle(Pendulo_t *p)
 {
     const float dt = 0.001f;         // 0.001 1 ms
-    const float velocidade_max = 500.0f; // mm/s
+    const float velocidade_max = 400.0f; // mm/s
 
     float erro;
     float derivada;
     float saida_pid;
 
-    erro = 0 - p->angulo_pendulo; // setpoint = 0°
-    //erro = 5000 - p->encoder; // setpoint = 0°
+    //erro = 0 - p->angulo_pendulo; // setpoint = 0°
+    erro = (float) (((float) p->encoder) - 5000); // setpoint = 0°
+    erro = erro + (p->posicao_carro/5);
 
     // Integral
     integral += erro * dt;
@@ -359,7 +359,7 @@ static void Controle(Pendulo_t *p)
     erro_anterior = erro;
 
     // Comando para o motor
-    VelocidadeMotor(p, (int16_t)(-saida_pid));
+    VelocidadeMotor(p, (int16_t)(saida_pid));
 
     // Sai da região de estabilização
     if(fabsf(p->angulo_pendulo) > 30.0f)

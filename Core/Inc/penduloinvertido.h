@@ -37,7 +37,7 @@ typedef struct
     float angulo_pendulo;
     float velocidade_angular_pendulo;
     int16_t posicao_carro;
-    uint32_t velocidade_carro;
+    int16_t velocidade_carro;
 
     float kp;
     float ki;

@@ -99,8 +99,8 @@ void atraso_us(uint32_t us)
  }
 
 /**
- * @brief Ajusta PID com dados recebido do simulador no PC, normlamente de 0 a 99
- *		  Com isto temos os coeficientes Kp, Ki, Kd normalmente variando de 0 a 0.99
+ * @brief Ajusta PID com dados recebido do simulador no PC, normlamente de 0 a 100
+ *		  Com isto temos os coeficientes Kp, Ki, Kd normalmente variando de 0 a 0.1
  */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -109,8 +109,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		last_rx_time = HAL_GetTick();
 
         Pendulo_SetaPID(&pendulo, (float) rx_buffer[0],
-        		                  (float) rx_buffer[1] / 100,
-						          (float) rx_buffer[2] / 100);
+        		                  (float) rx_buffer[1] / 1000,
+						          (float) rx_buffer[2] / 1000);
 	}
 }
 
