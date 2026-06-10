@@ -328,7 +328,7 @@ static void Controle(Pendulo_t *p)
 
     //erro = 0 - p->angulo_pendulo; // setpoint = 0°
     erro = (float) (((float) p->encoder) - 5000); // setpoint = 0°
-    erro = erro + (p->posicao_carro/5);
+    erro = erro + (p->posicao_carro/2); // Quanto maior o divisor mais samba
 
     // Integral
     integral += erro * dt;

@@ -295,3 +295,22 @@ Clique no botão "Configure Trace", no quadro data trace / Comparator 0 (*) enab
 	HAL_TIM_PWM_Stop(htim_motor, canal_pwm);        
 	
     
+    
+pkg install -forge instrument-control
+
+clc;clear;
+pkg load instrument-control
+testeport=serial("/dev/ttyUSB0");
+pause(1);
+set(testport, 'baudrate',460800);
+for cnt=1:10
+  [rxdata,count]=srl_read(testport,1); 
+  recieved=char(rxdata)
+end
+a='teste';
+len_tx=length(a);
+srl_write(testport, a);
+pause(0.1);
+[rxdata,count]=srl_read(testport,len_tx); 
+recieved = char(data)
+fclose(testport);
