@@ -296,6 +296,8 @@ Clique no botão "Configure Trace", no quadro data trace / Comparator 0 (*) enab
 	
     
     
+Testes com GNU Octave    
+    
 pkg install -forge instrument-control
 
 clc;clear;
