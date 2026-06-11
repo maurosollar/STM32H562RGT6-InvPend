@@ -8,9 +8,8 @@ extern "C" {
 #include "main.h"
 #include "stdint.h"
 
-extern uint32_t tempo;
+extern int32_t tempo;
 extern void atraso_us(uint32_t us);
-
 
 typedef enum // Estados
 {

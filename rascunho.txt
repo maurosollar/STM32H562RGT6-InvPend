@@ -316,3 +316,40 @@ pause(0.1);
 [rxdata,count]=srl_read(testport,len_tx); 
 recieved = char(data)
 fclose(testport);
+
+
+
+
+
+
+static void SwingUp(Pendulo_t *p)
+{
+	float E;  // Energia
+	float Edes;  // Energia desejada
+	float Ee;  // Erro de energia
+
+
+	E = 0.5f * L * L * p->velocidade_angular_pendulo * p->velocidade_angular_pendulo +
+	    G * L * (1.0f - cosf(p->angulo_pendulo * (M_PI / 180.0f)));
+
+	Edes = 2.0f * G * L;
+	Ee = E - Edes;
+	tempo = (int32_t) Ee;
+
+    VelocidadeMotor(p, (int16_t)KSwingUP * Ee *
+    		                    p->velocidade_angular_pendulo *
+					            cosf(p->angulo_pendulo * (M_PI / 180.0f)));
+
+    if(fabsf(p->angulo_pendulo) < 15.0f)
+    {
+        p->estado = PENDULO_CONTROLE;
+    }
+}
+
+
+
+
+
+
+
+

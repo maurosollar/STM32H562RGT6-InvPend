@@ -54,7 +54,7 @@ UART_HandleTypeDef huart4;
 DMA_HandleTypeDef handle_GPDMA1_Channel0;
 
 /* USER CODE BEGIN PV */
-uint32_t  tempo;            // Variável para testes de tempo
+int32_t  tempo;             // Variável para testes de tempo
 uint32_t  last_rx_time = 0; // Controle de tempo para expirar dado recebido pela UART
 uint8_t   rx_buffer[3];     // Buffer do RX da UART
 char      tx_buffer[35];    // Buffer do TX da UART
@@ -148,7 +148,7 @@ void Envia_simulador()
 	{
 		uart_tx_busy = 1;
 		// Ângulo, Velocidade angular, posição do carro, velocidade do carro
-		sprintf((char*)tx_buffer, "%.1f;%.1f;%d;%ld\r\n",
+		sprintf((char*)tx_buffer, "%.1f;%.1f;%d;%d\r\n",
 				pendulo.angulo_pendulo,
 				pendulo.velocidade_angular_pendulo,
 				pendulo.posicao_carro,

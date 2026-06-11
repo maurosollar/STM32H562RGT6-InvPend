@@ -15,8 +15,7 @@ static EstadoChave_t EstadoChave;
 static void SelfTest(Pendulo_t *p);
 static void SwingUp(Pendulo_t *p);
 static void Controle(Pendulo_t *p);
-static void AtualizaAnguloPendulo(Pendulo_t *p);
-static void AtualizaVelocidadePendulo(Pendulo_t *p);
+static void AtualizaAnguloVelocidadePendulo(Pendulo_t *p);
 static void VelocidadeMotor(Pendulo_t *p, int16_t velocidade);
 static void Parar(Pendulo_t *p);
 static EstadoChave_t ChaveFimCurso(Pendulo_t *p);
@@ -70,15 +69,14 @@ void Pendulo_AtualizaPendulo(Pendulo_t *p)
 	{
 		p->estado = PENDULO_ERRO;
 	}
-    AtualizaAnguloPendulo(p);
-    AtualizaVelocidadePendulo(p);
+    AtualizaAnguloVelocidadePendulo(p);
     AtualizaPosicaoCarro(p);
 
     switch(p->estado)
     {
         case PENDULO_SELFTEST:
             SelfTest(p);
-        break;
+            break;
 
         case PENDULO_SWINGUP:
             SwingUp(p);
@@ -268,46 +266,37 @@ static void SelfTest(Pendulo_t *p)
 }
 
 
-// Atualiza Valor Encoder
-void Pendulo_AtualizaValorEncoder(Pendulo_t *p, int32_t encoder)
-{
-    p->encoder = encoder;
-}
-
-
-// Seta PID
-void Pendulo_SetaPID(Pendulo_t *p, float kp, float ki, float kd)
-{
-    p->kp = kp;
-    p->ki = ki;
-    p->kd = kd;
-}
-
-
-// Inicia SWINGUP
-void IniciaSwingUp(Pendulo_t *p)
-{
-
-	//VelocidadeMotor(p, 0);
-	//AtualizaPosicaoCarro(p);
-
-    p->estado = PENDULO_CONTROLE;
-}
-
-
-//Parar o pêndulo
-void Parar(Pendulo_t *p)
-{
-	VelocidadeMotor(p, 0);
-    p->estado = PENDULO_ERRO;
-}
-
-// SWING-UP
 static void SwingUp(Pendulo_t *p)
 {
-    /*
-     * ALGORITMO SWING-UP
-     */
+	float E;  // Energia
+	float Edes;  // Energia desejada
+	float Ee;  // Erro de energia
+	float Vr;
+	float theta = p->angulo_pendulo * (M_PI / 180.0f);
+
+    const float KSwingUP = 10.0f; // Ganho Swing-UP
+    const float L = 0.25f;  // Centro da massa comprimento do pêndulo em metros / 2
+    const float G = 9.8f; // Aceleração da gravidade
+
+    float theta_ponto = p->velocidade_angular_pendulo * (M_PI / 180.0f);
+
+	E = 0.5f * L * L * theta_ponto * theta_ponto +
+	    G * L * (1.0f - cosf(theta));
+
+	Edes = 2.0f * G * L;
+	Ee = E - Edes;
+
+    Vr = (KSwingUP * Ee * theta_ponto * cosf(theta));
+
+    if(Vr < -200)
+    {
+    	Vr = -200;
+    }
+    if(Vr > 200)
+    {
+    	Vr = 200;
+    }
+	VelocidadeMotor(p, (int16_t) Vr);
 
     if(fabsf(p->angulo_pendulo) < 15.0f)
     {
@@ -315,11 +304,10 @@ static void SwingUp(Pendulo_t *p)
     }
 }
 
-
 // Controle PID
 static void Controle(Pendulo_t *p)
 {
-    const float dt = 0.001f;         // 0.001 1 ms
+	const float dt = 0.001f;
     const float velocidade_max = 400.0f; // mm/s
 
     float erro;
@@ -374,25 +362,52 @@ static void Controle(Pendulo_t *p)
 }
 
 
-/**
- * @brief Calcula ângulo do pêndulo
- */
-static void AtualizaAnguloPendulo(Pendulo_t *p)
+// Atualiza Valor Encoder
+void Pendulo_AtualizaValorEncoder(Pendulo_t *p, int32_t encoder)
 {
+    p->encoder = encoder;
+}
+
+
+// Seta PID
+void Pendulo_SetaPID(Pendulo_t *p, float kp, float ki, float kd)
+{
+    p->kp = kp;
+    p->ki = ki;
+    p->kd = kd;
+}
+
+
+
+//Parar o pêndulo
+void Parar(Pendulo_t *p)
+{
+	VelocidadeMotor(p, 0);
+    p->estado = PENDULO_ERRO;
+}
+
+
+/**
+ * @brief Calcula ângulo e velocidade do pêndulo
+ */
+static void AtualizaAnguloVelocidadePendulo(Pendulo_t *p)
+{
+	static float angulo_anterior = 0.0f;
+
     p->angulo_pendulo = ((float)p->encoder * 360.0f) / 10000.0f;
     p->angulo_pendulo = p->angulo_pendulo - 180;
-}
 
+    float delta = p->angulo_pendulo - angulo_anterior;
 
-/**
- * @brief Velocidade angular do pêndulo
- */
-static void AtualizaVelocidadePendulo(Pendulo_t *p)
-{
-    static float angulo_anterior = 0.0f;
+    if(delta > 180.0f)
+        delta -= 360.0f;
 
-    p->velocidade_angular_pendulo =
-            (p->angulo_pendulo - angulo_anterior) / 0.001f; // 1 ms
+    if(delta < -180.0f)
+        delta += 360.0f;
+
+    p->velocidade_angular_pendulo = delta / 0.001f; // 1 ms
 
     angulo_anterior = p->angulo_pendulo;
+
 }
+
