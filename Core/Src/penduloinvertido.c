@@ -274,7 +274,7 @@ static void SwingUp(Pendulo_t *p)
 	float Vr;
 	float theta = (p->angulo_pendulo + 180.0f) * (M_PI / 180.0f);
 
-    const float KSwingUP = 10.0f; // Ganho Swing-UP
+    const float KSwingUP = 20.0f; // Ganho Swing-UP
     const float L = 0.25f;  // Centro da massa comprimento do pêndulo em metros / 2
     const float G = 9.8f; // Aceleração da gravidade
 
@@ -288,15 +288,15 @@ static void SwingUp(Pendulo_t *p)
 
     Vr = (KSwingUP * Ee * theta_ponto * cosf(theta));
 
-    if(Vr < -300)
+    if(Vr < -1100)
     {
-    	Vr = -300;
+    	Vr = -1100;
     }
-    if(Vr > 300)
+    if(Vr > 1100)
     {
-    	Vr = 300;
+    	Vr = 1100;
     }
-	VelocidadeMotor(p, (int16_t) Vr);
+	VelocidadeMotor(p, (int16_t) -Vr);
 
     if(fabsf(p->angulo_pendulo) < 15.0f)
     {
