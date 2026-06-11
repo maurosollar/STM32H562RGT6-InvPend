@@ -272,7 +272,7 @@ static void SwingUp(Pendulo_t *p)
 	float Edes;  // Energia desejada
 	float Ee;  // Erro de energia
 	float Vr;
-	float theta = p->angulo_pendulo * (M_PI / 180.0f);
+	float theta = (p->angulo_pendulo + 180.0f) * (M_PI / 180.0f);
 
     const float KSwingUP = 10.0f; // Ganho Swing-UP
     const float L = 0.25f;  // Centro da massa comprimento do pêndulo em metros / 2
@@ -288,13 +288,13 @@ static void SwingUp(Pendulo_t *p)
 
     Vr = (KSwingUP * Ee * theta_ponto * cosf(theta));
 
-    if(Vr < -200)
+    if(Vr < -300)
     {
-    	Vr = -200;
+    	Vr = -300;
     }
-    if(Vr > 200)
+    if(Vr > 300)
     {
-    	Vr = 200;
+    	Vr = 300;
     }
 	VelocidadeMotor(p, (int16_t) Vr);
 
@@ -362,14 +362,12 @@ static void Controle(Pendulo_t *p)
 }
 
 
-// Atualiza Valor Encoder
 void Pendulo_AtualizaValorEncoder(Pendulo_t *p, int32_t encoder)
 {
     p->encoder = encoder;
 }
 
 
-// Seta PID
 void Pendulo_SetaPID(Pendulo_t *p, float kp, float ki, float kd)
 {
     p->kp = kp;
@@ -379,7 +377,6 @@ void Pendulo_SetaPID(Pendulo_t *p, float kp, float ki, float kd)
 
 
 
-//Parar o pêndulo
 void Parar(Pendulo_t *p)
 {
 	VelocidadeMotor(p, 0);
@@ -392,22 +389,41 @@ void Parar(Pendulo_t *p)
  */
 static void AtualizaAnguloVelocidadePendulo(Pendulo_t *p)
 {
-	static float angulo_anterior = 0.0f;
+    static float historico[4] = {0.0f};
+    static uint8_t idx = 0;
+    static float velocidade_filtrada = 0.0f;
 
-    p->angulo_pendulo = ((float)p->encoder * 360.0f) / 10000.0f;
-    p->angulo_pendulo = p->angulo_pendulo - 180;
+    float delta;
+    float velocidade;
 
-    float delta = p->angulo_pendulo - angulo_anterior;
+    // Ângulo: -180° a +180°
+    p->angulo_pendulo =
+        ((float)p->encoder * 360.0f / 10000.0f) - 180.0f;
 
+    // Diferença em relação à amostra de 4 ms atrás
+    delta = p->angulo_pendulo - historico[idx];
+
+    // Trata passagem por ±180°
     if(delta > 180.0f)
         delta -= 360.0f;
-
-    if(delta < -180.0f)
+    else if(delta < -180.0f)
         delta += 360.0f;
 
-    p->velocidade_angular_pendulo = delta / 0.001f; // 1 ms
+    // Velocidade em °/s
+    velocidade = delta / (0.001f * 4.0f);
 
-    angulo_anterior = p->angulo_pendulo;
+    // Filtro passa-baixa
+    velocidade_filtrada =
+        0.9f * velocidade_filtrada +
+        0.1f * velocidade;
 
+    p->velocidade_angular_pendulo = velocidade_filtrada;
+
+    // Atualiza histórico
+    historico[idx] = p->angulo_pendulo;
+
+    idx++;
+    if(idx >= 4)
+        idx = 0;
 }
 
