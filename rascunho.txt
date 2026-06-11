@@ -347,6 +347,50 @@ static void SwingUp(Pendulo_t *p)
 }
 
 
+/**
+ * @brief Calcula ângulo e velocidade do pêndulo
+ */
+static void AtualizaAnguloVelocidadePendulo(Pendulo_t *p)
+{
+    static float historico[4] = {0.0f};
+    static uint8_t idx = 0;
+    static float velocidade_filtrada = 0.0f;
+
+    float delta;
+    float velocidade;
+
+    p->encoder = p->htim_encoder->Instance->CNT;
+    // Ângulo: -180° a +180°
+    p->angulo_pendulo =
+        ((float)p->encoder * 360.0f / 10000.0f) - 180.0f;
+
+    // Diferença em relação à amostra de 4 ms atrás
+    delta = p->angulo_pendulo - historico[idx];
+
+    // Trata passagem por ±180°
+    if(delta > 180.0f)
+        delta -= 360.0f;
+    else if(delta < -180.0f)
+        delta += 360.0f;
+
+    // Velocidade em °/s
+    velocidade = delta / (0.001f * 4.0f);
+
+    // Filtro passa-baixa
+    velocidade_filtrada =
+        0.9f * velocidade_filtrada +
+        0.1f * velocidade;
+
+    p->velocidade_angular_pendulo = velocidade_filtrada;
+
+    // Atualiza histórico
+    historico[idx] = p->angulo_pendulo;
+
+    idx++;
+    if(idx >= 4)
+        idx = 0;
+}
+
 
 
 

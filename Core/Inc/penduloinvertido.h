@@ -69,7 +69,6 @@ void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor_pwm, uint32_
 						TIM_HandleTypeDef *htim_conta_pulsos,
 						TIM_HandleTypeDef *htim_encoder);
 void Pendulo_AtualizaPendulo(Pendulo_t *pendulo);
-void Pendulo_AtualizaValorEncoder(Pendulo_t *pendulo, int32_t encoder);
 void Pendulo_SetaPID(Pendulo_t *pendulo, float kp, float ki, float kd);
 
 

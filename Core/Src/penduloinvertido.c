@@ -17,7 +17,6 @@ static void SwingUp(Pendulo_t *p);
 static void Controle(Pendulo_t *p);
 static void AtualizaAnguloVelocidadePendulo(Pendulo_t *p);
 static void VelocidadeMotor(Pendulo_t *p, int16_t velocidade);
-static void Parar(Pendulo_t *p);
 static EstadoChave_t ChaveFimCurso(Pendulo_t *p);
 static void AtualizaPosicaoCarro(Pendulo_t *p);
 
@@ -63,14 +62,16 @@ void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor_pwm, uint32_
  */
 void Pendulo_AtualizaPendulo(Pendulo_t *p)
 {
-	// Evita crash do carro, exceto no SelfTest que tem um controle a parte
+	HAL_GPIO_WritePin(Time_Int_GPIO_Port, Time_Int_Pin, 1);
+    AtualizaAnguloVelocidadePendulo(p);
+    AtualizaPosicaoCarro(p);
+
 	if((ChaveFimCurso(p) == Chave_direita_fechada || ChaveFimCurso(p) == Chave_esquerda_fechada)
 		&& (p->estado != PENDULO_SELFTEST))
 	{
 		p->estado = PENDULO_ERRO;
 	}
-    AtualizaAnguloVelocidadePendulo(p);
-    AtualizaPosicaoCarro(p);
+
 
     switch(p->estado)
     {
@@ -87,10 +88,11 @@ void Pendulo_AtualizaPendulo(Pendulo_t *p)
             break;
 
         case PENDULO_ERRO:
-            Parar(p);
+        	VelocidadeMotor(p, 0);
             p->estado = PENDULO_SELFTEST;
             break;
     }
+    HAL_GPIO_WritePin(Time_Int_GPIO_Port, Time_Int_Pin, 0);
 }
 
 
@@ -274,9 +276,10 @@ static void SwingUp(Pendulo_t *p)
 	float Vr;
 	float theta = (p->angulo_pendulo + 180.0f) * (M_PI / 180.0f);
 
-    const float KSwingUP = 20.0f; // Ganho Swing-UP
+    const float KSwingUP = 1.0f; // Ganho Swing-UP
     const float L = 0.25f;  // Centro da massa comprimento do pêndulo em metros / 2
     const float G = 9.8f; // Aceleração da gravidade
+
 
     float theta_ponto = p->velocidade_angular_pendulo * (M_PI / 180.0f);
 
@@ -316,7 +319,7 @@ static void Controle(Pendulo_t *p)
 
     //erro = 0 - p->angulo_pendulo; // setpoint = 0°
     erro = (float) (((float) p->encoder) - 5000); // setpoint = 0°
-    erro = erro + (p->posicao_carro/2); // Quanto maior o divisor mais samba
+    erro = erro + (p->posicao_carro/2); // Quanto maior o divisor mais instável
 
     // Integral
     integral += erro * dt;
@@ -362,12 +365,6 @@ static void Controle(Pendulo_t *p)
 }
 
 
-void Pendulo_AtualizaValorEncoder(Pendulo_t *p, int32_t encoder)
-{
-    p->encoder = encoder;
-}
-
-
 void Pendulo_SetaPID(Pendulo_t *p, float kp, float ki, float kd)
 {
     p->kp = kp;
@@ -376,54 +373,30 @@ void Pendulo_SetaPID(Pendulo_t *p, float kp, float ki, float kd)
 }
 
 
-
-void Parar(Pendulo_t *p)
-{
-	VelocidadeMotor(p, 0);
-    p->estado = PENDULO_ERRO;
-}
-
-
 /**
  * @brief Calcula ângulo e velocidade do pêndulo
  */
 static void AtualizaAnguloVelocidadePendulo(Pendulo_t *p)
 {
-    static float historico[4] = {0.0f};
-    static uint8_t idx = 0;
-    static float velocidade_filtrada = 0.0f;
-
     float delta;
-    float velocidade;
+    static float angulo_anterior = 0.0f;
+
+    p->encoder = p->htim_encoder->Instance->CNT;
 
     // Ângulo: -180° a +180°
     p->angulo_pendulo =
         ((float)p->encoder * 360.0f / 10000.0f) - 180.0f;
 
-    // Diferença em relação à amostra de 4 ms atrás
-    delta = p->angulo_pendulo - historico[idx];
+    delta = p->angulo_pendulo;
 
-    // Trata passagem por ±180°
+    // Trata passagem por +-180°
     if(delta > 180.0f)
         delta -= 360.0f;
     else if(delta < -180.0f)
         delta += 360.0f;
 
-    // Velocidade em °/s
-    velocidade = delta / (0.001f * 4.0f);
+    p->velocidade_angular_pendulo = (delta - angulo_anterior) / 0.001f; // 1 ms
 
-    // Filtro passa-baixa
-    velocidade_filtrada =
-        0.9f * velocidade_filtrada +
-        0.1f * velocidade;
-
-    p->velocidade_angular_pendulo = velocidade_filtrada;
-
-    // Atualiza histórico
-    historico[idx] = p->angulo_pendulo;
-
-    idx++;
-    if(idx >= 4)
-        idx = 0;
+    angulo_anterior = delta; //p->angulo_pendulo;
 }
 

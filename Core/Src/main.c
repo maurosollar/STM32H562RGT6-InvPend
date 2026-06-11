@@ -54,15 +54,15 @@ UART_HandleTypeDef huart4;
 DMA_HandleTypeDef handle_GPDMA1_Channel0;
 
 /* USER CODE BEGIN PV */
-int32_t  tempo;             // Variável para testes de tempo
+int32_t   tempo;            // Variável para testes de tempo
 uint32_t  last_rx_time = 0; // Controle de tempo para expirar dado recebido pela UART
 uint8_t   rx_buffer[3];     // Buffer do RX da UART
 char      tx_buffer[35];    // Buffer do TX da UART
-int32_t   excede_envio; // Variável é incrementada caso tenha dados de simulação para enviar
-                        // via serial antes de terminar o anterior (Serial 460800bps)
-                        // significa que não esta dando tempo de enviar novos dados
-                        // antes de acabar de enviar os dados anteriores.
-                        // Obs.: Utilizada somente para análise e debug
+int32_t   excede_envio;     // Variável é incrementada caso tenha dados de simulação para enviar
+                            // via serial antes de terminar o anterior (Serial 460800bps)
+                            // significa que não esta dando tempo de enviar novos dados
+                            // antes de acabar de enviar os dados anteriores.
+                            // Obs.: Utilizada somente para análise e debug
 
 volatile uint8_t uart_tx_busy = 0, flag_controle = 0;
 
@@ -100,7 +100,7 @@ void atraso_us(uint32_t us)
 
 /**
  * @brief Ajusta PID com dados recebido do simulador no PC, normlamente de 0 a 100
- *		  Com isto temos os coeficientes Kp, Ki, Kd normalmente variando de 0 a 0.1
+ *		  Com isto temos os coeficientes Kp de 0 a 100, Ki e Kd de 0 a 0.1
  */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -117,7 +117,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 /**
  * @brief Descarta dados do buffer caso a UART não seja preenchida em 1 segundo
  */
-void Expira_rx_Buffer_Simulador()
+void Expira_RX_Buffer_Simulador()
 
 {
 	if((HAL_GetTick() - last_rx_time) > 1000 && rx_buffer[0] > 0)
@@ -147,6 +147,7 @@ void Envia_simulador()
 	if(uart_tx_busy == 0)
 	{
 		uart_tx_busy = 1;
+
 		// Ângulo, Velocidade angular, posição do carro, velocidade do carro
 		sprintf((char*)tx_buffer, "%.1f;%.1f;%d;%d\r\n",
 				pendulo.angulo_pendulo,
@@ -154,7 +155,9 @@ void Envia_simulador()
 				pendulo.posicao_carro,
 				pendulo.velocidade_carro);
 		HAL_UART_Transmit_DMA(&huart4, (uint8_t*)tx_buffer, strlen(tx_buffer));
-	} else {
+	}
+	else
+	{
 		excede_envio++;
 	}
 }
@@ -168,8 +171,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	if(htim == &htim3)
 	{
 	    flag_controle = 1;
-	    Expira_rx_Buffer_Simulador();
-	    Envia_simulador();
 	}
 }
 
@@ -264,8 +265,11 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	if(flag_controle == 1)
 	{
-		Pendulo_AtualizaValorEncoder(&pendulo, TIM2->CNT);
         Pendulo_AtualizaPendulo(&pendulo);
+
+	    Expira_RX_Buffer_Simulador();
+	    Envia_simulador();
+
 		flag_controle = 0;
 	}
   }
