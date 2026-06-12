@@ -276,7 +276,7 @@ static void SwingUp(Pendulo_t *p)
 	float Vr;
 	float theta = (p->angulo_pendulo + 180.0f) * (M_PI / 180.0f);
 
-    const float KSwingUP = 1.0f; // Ganho Swing-UP
+    const float KSwingUP = 60.0f; // Ganho Swing-UP
     const float L = 0.25f;  // Centro da massa comprimento do pêndulo em metros / 2
     const float G = 9.8f; // Aceleração da gravidade
 
@@ -376,32 +376,6 @@ void Pendulo_SetaPID(Pendulo_t *p, float kp, float ki, float kd)
 /**
  * @brief Calcula ângulo e velocidade do pêndulo
  */
-/*
-static void AtualizaAnguloVelocidadePendulo(Pendulo_t *p)
-{
-    float delta;
-    static float angulo_anterior = 0.0f;
-
-    p->encoder = p->htim_encoder->Instance->CNT;
-
-    // Ângulo: -180° a +180°
-    p->angulo_pendulo =
-        ((float)p->encoder * 360.0f / 10000.0f) - 180.0f;
-
-    delta = p->angulo_pendulo;
-
-    // Trata passagem por +-180°
-    if(delta > 180.0f)
-        delta -= 360.0f;
-    else if(delta < -180.0f)
-        delta += 360.0f;
-
-    p->velocidade_angular_pendulo = (delta - angulo_anterior) / 0.001f; // 1 ms
-
-    angulo_anterior = delta; //p->angulo_pendulo;
-}
-*/
-
 static void AtualizaAnguloVelocidadePendulo(Pendulo_t *p)
 {
     static uint16_t encoder_anterior = 0;
