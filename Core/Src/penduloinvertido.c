@@ -376,6 +376,7 @@ void Pendulo_SetaPID(Pendulo_t *p, float kp, float ki, float kd)
 /**
  * @brief Calcula ângulo e velocidade do pêndulo
  */
+/*
 static void AtualizaAnguloVelocidadePendulo(Pendulo_t *p)
 {
     float delta;
@@ -399,4 +400,64 @@ static void AtualizaAnguloVelocidadePendulo(Pendulo_t *p)
 
     angulo_anterior = delta; //p->angulo_pendulo;
 }
+*/
+
+static void AtualizaAnguloVelocidadePendulo(Pendulo_t *p)
+{
+    static uint16_t encoder_anterior = 0;
+    static uint8_t primeira_leitura = 1;
+
+    int32_t delta_encoder;
+
+    HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 1);
+
+#define FILTRADA
+
+#ifdef FILTRADA
+    static float velocidade_filtrada = 0.0f;
+    float velocidade_inst;
+#endif
+
+    p->encoder = p->htim_encoder->Instance->CNT;
+
+    // Ângulo para controle (-180° a +180°)
+    p->angulo_pendulo = ((float)p->encoder * 360.0f / 10000.0f) - 180.0f;
+
+    // Evita pico na primeira chamada
+    if(primeira_leitura)
+    {
+        encoder_anterior = p->encoder;
+        p->velocidade_angular_pendulo = 0.0f;
+        primeira_leitura = 0;
+        return;
+    }
+
+    // Diferença de contagens
+    delta_encoder = (int32_t)p->encoder - (int32_t)encoder_anterior;
+
+    // Corrige passagem pelo zero (wrap-around)
+    if(delta_encoder > 5000)
+        delta_encoder -= 10000;
+    else if(delta_encoder < -5000)
+        delta_encoder += 10000;
+
+#ifdef FILTRADA
+    velocidade_inst = delta_encoder * 36.0f;
+
+    // Filtro exponencial
+    velocidade_filtrada =
+        0.8f * velocidade_filtrada +
+        0.2f * velocidade_inst;
+
+    p->velocidade_angular_pendulo = velocidade_filtrada;
+#else
+
+    // Velocidade angular em graus/s // dt = 1 ms
+    p->velocidade_angular_pendulo = delta_encoder * 36.0f;
+
+#endif
+    encoder_anterior = p->encoder;
+    HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 0);
+}
+
 
