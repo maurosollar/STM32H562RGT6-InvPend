@@ -152,6 +152,11 @@ static void VelocidadeMotor(Pendulo_t *p, int16_t velocidade)
 	static int16_t velocidade_anterior = 0;
 	uint32_t contagem_anterior;
 
+	if(abs(velocidade) > 300)
+	{
+	    velocidade = (velocidade > 0) ? 300 : -300;
+	}
+
 	p->velocidade_carro = velocidade;
 
     // A T E N Ç Ã O: Verificar o tempo de acionamento (5us) da Direção do motor, tratar no início e no final
@@ -279,6 +284,7 @@ static void SwingUp(Pendulo_t *p)
     float omega;
     float E;
     float Ee;
+    float comando;
 
     int16_t velocidade;
 
@@ -295,7 +301,15 @@ static void SwingUp(Pendulo_t *p)
     velocidade = (Ee * omega * cosf(theta));
     tempo = (int32_t) velocidade;
 
-    VelocidadeMotor(p, (int16_t) velocidade);
+    comando = Ee * omega * cosf(theta);
+
+    if(comando > 300.0f)
+        comando = 300.0f;
+
+    if(comando < -300.0f)
+        comando = -300.0f;
+
+    VelocidadeMotor(p, (int16_t) comando);
 
     if(fabsf(p->angulo_pendulo) < 15.0f)
     {
@@ -307,7 +321,7 @@ static void SwingUp(Pendulo_t *p)
 static void Controle(Pendulo_t *p)
 {
 	const float dt = 0.001f;
-    const float velocidade_max = 400.0f; // mm/s
+    const float velocidade_max = 300.0f; // mm/s
 
     float erro;
     float derivada;

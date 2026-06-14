@@ -348,10 +348,11 @@ static void SwingUp(Pendulo_t *p)
 
 
 
-tatic void SwingUp(Pendulo_t *p)
+// Estava pegando o ponto certo 
+static void SwingUp(Pendulo_t *p)
 {
 	const float g = 9.81f;
-	const float KSW = 20;
+	const float KSW = 10;
     float theta;
     float omega;
     float E;
@@ -370,199 +371,41 @@ tatic void SwingUp(Pendulo_t *p)
     Ee = E - (2.0f * g) * KSW;
 
     velocidade = (Ee * omega * cosf(theta));
+    tempo = (int32_t) velocidade;
 
     VelocidadeMotor(p, (int16_t) velocidade);
 
-    if (fabsf(p->angulo_pendulo) < 15.0f)
+    if(fabsf(p->angulo_pendulo) < 15.0f)
     {
         p->estado = PENDULO_CONTROLE;
     }
 }
 
-// Controle PID
-static void Controle(Pendulo_t *p)
-{
-	const float dt = 0.001f;
-    const float velocidade_max = 400.0f; // mm/s
 
-    float erro;
-    float derivada;
-    float saida_pid;
+    const float g = 9.81f;
+    const float KSW = 10.0f;
 
+    float theta;
+    float omega;
+    float E;
+    float Ee;
+    float comando;
 
-    //erro = 0 - p->angulo_pendulo; // setpoint = 0°
-    erro = (float) (p->encoder - 5000); // setpoint = 0°
-    erro += (p->posicao_carro/2); // Quanto maior o divisor mais instável
+    theta = p->angulo_pendulo * M_PI / 180.0f;
+    omega = p->velocidade_angular_pendulo * M_PI / 180.0f;
 
-    // Integral
-    integral += erro * dt;
+    E =
+        0.5f * omega * omega +
+        g * (1.0f - cosf(theta));
 
-    // Anti-windup
-    if (integral > 100.0f)
-        integral = 100.0f;
+    Ee = E - (2.0f * g);
 
-    if (integral < -100.0f)
-        integral = -100.0f;
+    comando = KSW * Ee * omega * cosf(theta);
 
-    // Derivada
-    derivada = (erro - erro_anterior) / dt;
+    if(comando > 400.0f)
+        comando = 400.0f;
 
-    // PID
-    saida_pid =
-            (p->kp * erro) +
-            (p->ki * integral) +
-            (p->kd * derivada);
+    if(comando < -400.0f)
+        comando = -400.0f;
 
-    // Saturação da velocidade
-    if (saida_pid > velocidade_max)
-        saida_pid = velocidade_max;
-
-    if (saida_pid < -velocidade_max)
-        saida_pid = -velocidade_max;
-
-    erro_anterior = erro;
-
-    // Comando para o motor
-    VelocidadeMotor(p, (int16_t)(saida_pid));
-
-    // Sai da região de estabilização
-    if (fabsf(p->angulo_pendulo) > 30.0f)
-    {
-        integral = 0.0f;
-        erro_anterior = 0.0f;
-
-        VelocidadeMotor(p, 0);
-
-        p->estado = PENDULO_SWINGUP;
-    }
-}
-
-
-void Pendulo_SetaPID(Pendulo_t *p, float kp, float ki, float kd)
-{
-    p->kp = kp;
-    p->ki = ki;
-    p->kd = kd;
-}
-
-
-/**
- * @brief Calcula ângulo e pega valor do encoder
- */
-static void AtualizaEncoderAngulo(Pendulo_t *p)
-{
-    p->encoder = p->htim_encoder->Instance->CNT;
-
-    // Ângulo para controle (-180° a +180°)
-    p->angulo_pendulo = ((float)p->encoder * 360.0f / 10000.0f) - 180.0f;
-}
-
-/**
- * @brief Calcula a velocidade angular do pêndulo usando janela de 5 ms
- */
-static void AtualizaVelocidadeAngularPendulo(Pendulo_t *p)
-{
-    static uint16_t encoder_anterior = 0;
-    static uint8_t  contador = 0;
-    static uint8_t  primeira_leitura = 1;
-
-    HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 1);
-
-    if (primeira_leitura)
-    {
-        encoder_anterior  = p->encoder;
-        p->velocidade_angular_pendulo = 0.0f;
-        primeira_leitura = 0;
-
-        HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 0);
-        return;
-    }
-
-    contador++;
-    if (contador < 5)
-    {
-        HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 0);
-        return;
-    }
-    contador = 0;
-
-    int32_t delta_encoder = (int32_t)p->encoder - (int32_t)encoder_anterior;
-
-    // Corrige wrap-around
-    if (delta_encoder >  5000)
-    {
-    	delta_encoder -= 10000;
-    }
-    else if (delta_encoder < -5000)
-    {
-    	delta_encoder += 10000;
-    }
-
-    p->velocidade_angular_pendulo = delta_encoder * 7.2f;
-
-    encoder_anterior = p->encoder;
-
-    HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 0);
-}
-
-
-/**
- * @brief Calcula ângulo e velocidade do pêndulo
- */
-static void AtualizaVelocidadePendulo(Pendulo_t *p)
-{
-    static uint16_t encoder_anterior = 0;
-    static uint8_t primeira_leitura = 1;
-
-    int32_t delta_encoder;
-
-    HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 1);
-
-#define FILTRADA
-
-#ifdef FILTRADA
-    static float velocidade_filtrada = 0.0f;
-    float velocidade_inst;
-#endif
-
-
-
-    // Evita pico na primeira chamada
-    if(primeira_leitura)
-    {
-        encoder_anterior = p->encoder;
-        p->velocidade_angular_pendulo = 0.0f;
-        primeira_leitura = 0;
-        return;
-    }
-
-    // Diferença de contagens
-    delta_encoder = (int32_t)p->encoder - (int32_t)encoder_anterior;
-
-    // Corrige passagem pelo zero (wrap-around)
-    if(delta_encoder > 5000)
-        delta_encoder -= 10000;
-    else if(delta_encoder < -5000)
-        delta_encoder += 10000;
-
-#ifdef FILTRADA
-    velocidade_inst = delta_encoder * 36.0f;
-
-    // Filtro exponencial
-    velocidade_filtrada =
-        0.8f * velocidade_filtrada +
-        0.2f * velocidade_inst;
-
-    p->velocidade_angular_pendulo = velocidade_filtrada;
-#else
-
-    // Velocidade angular em graus/s // dt = 1 ms
-    p->velocidade_angular_pendulo = delta_encoder * 36.0f;
-
-#endif
-    encoder_anterior = p->encoder;
-    HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 0);
-}
-
-
-
+    VelocidadeMotor(p, (int16_t)comando);
