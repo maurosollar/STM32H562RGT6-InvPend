@@ -279,7 +279,7 @@ static void SelfTest(Pendulo_t *p)
 static void SwingUp(Pendulo_t *p)
 {
 	const float g = 9.81f;
-	const float KSW = 10;
+	const float KSW = 40;
     float theta;
     float omega;
     float E;
