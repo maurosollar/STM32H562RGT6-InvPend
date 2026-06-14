@@ -64,6 +64,7 @@ void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor_pwm, uint32_
 void Pendulo_AtualizaPendulo(Pendulo_t *p)
 {
 	HAL_GPIO_WritePin(Time_Int_GPIO_Port, Time_Int_Pin, 1);
+
 	AtualizaAngulo(p);
     AtualizaVelocidadeAngularPendulo(p);
     AtualizaPosicaoCarro(p);
@@ -272,7 +273,29 @@ static void SelfTest(Pendulo_t *p)
 
 static void SwingUp(Pendulo_t *p)
 {
+	const float g = 9.81f;
+	const float KSW = 10;
+    float theta;
+    float omega;
+    float E;
+    float Ee;
 
+    int16_t velocidade;
+
+    theta = p->angulo_pendulo * M_PI / 180.0f;
+    omega = p->velocidade_angular_pendulo * M_PI / 180.0f;
+
+    // Energia atual
+    E = 0.5f * omega * omega +
+        g * (1.0f - cosf(theta)) * KSW;
+
+    // Erro de energia
+    Ee = E - (2.0f * g) * KSW;
+
+    velocidade = (Ee * omega * cosf(theta));
+    tempo = (int32_t) velocidade;
+
+    VelocidadeMotor(p, (int16_t) velocidade);
 
     if(fabsf(p->angulo_pendulo) < 15.0f)
     {
@@ -322,7 +345,6 @@ static void Controle(Pendulo_t *p)
 
     erro_anterior = erro;
 
-    // Comando para o motor
     VelocidadeMotor(p, (int16_t)(saida_pid));
 
     // Sai da região de estabilização
