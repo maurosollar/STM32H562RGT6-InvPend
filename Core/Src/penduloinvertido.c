@@ -15,7 +15,8 @@ static EstadoChave_t EstadoChave;
 static void SelfTest(Pendulo_t *p);
 static void SwingUp(Pendulo_t *p);
 static void Controle(Pendulo_t *p);
-static void AtualizaAnguloVelocidadePendulo(Pendulo_t *p);
+static void AtualizaAngulo(Pendulo_t *p);
+static void AtualizaVelocidadeAngularPendulo(Pendulo_t *p);
 static void VelocidadeMotor(Pendulo_t *p, int16_t velocidade);
 static EstadoChave_t ChaveFimCurso(Pendulo_t *p);
 static void AtualizaPosicaoCarro(Pendulo_t *p);
@@ -63,7 +64,8 @@ void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor_pwm, uint32_
 void Pendulo_AtualizaPendulo(Pendulo_t *p)
 {
 	HAL_GPIO_WritePin(Time_Int_GPIO_Port, Time_Int_Pin, 1);
-    AtualizaAnguloVelocidadePendulo(p);
+	AtualizaAngulo(p);
+    AtualizaVelocidadeAngularPendulo(p);
     AtualizaPosicaoCarro(p);
 
 	if((ChaveFimCurso(p) == Chave_direita_fechada || ChaveFimCurso(p) == Chave_esquerda_fechada)
@@ -270,36 +272,7 @@ static void SelfTest(Pendulo_t *p)
 
 static void SwingUp(Pendulo_t *p)
 {
-	float E;  // Energia
-	float Edes;  // Energia desejada
-	float Ee;  // Erro de energia
-	float Vr;
-	float theta = (p->angulo_pendulo + 180.0f) * (M_PI / 180.0f);
 
-    const float KSwingUP = 60.0f; // Ganho Swing-UP
-    const float L = 0.25f;  // Centro da massa comprimento do pêndulo em metros / 2
-    const float G = 9.8f; // Aceleração da gravidade
-
-
-    float theta_ponto = p->velocidade_angular_pendulo * (M_PI / 180.0f);
-
-	E = 0.5f * L * L * theta_ponto * theta_ponto +
-	    G * L * (1.0f - cosf(theta));
-
-	Edes = 2.0f * G * L;
-	Ee = E - Edes;
-
-    Vr = (KSwingUP * Ee * theta_ponto * cosf(theta));
-
-    if(Vr < -1100)
-    {
-    	Vr = -1100;
-    }
-    if(Vr > 1100)
-    {
-    	Vr = 1100;
-    }
-	VelocidadeMotor(p, (int16_t) -Vr);
 
     if(fabsf(p->angulo_pendulo) < 15.0f)
     {
@@ -376,62 +349,58 @@ void Pendulo_SetaPID(Pendulo_t *p, float kp, float ki, float kd)
 /**
  * @brief Calcula ângulo e velocidade do pêndulo
  */
-static void AtualizaAnguloVelocidadePendulo(Pendulo_t *p)
+static void AtualizaAngulo(Pendulo_t *p)
 {
-    static uint16_t encoder_anterior = 0;
-    static uint8_t primeira_leitura = 1;
-
-    int32_t delta_encoder;
-
-    HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 1);
-
-#define FILTRADA
-
-#ifdef FILTRADA
-    static float velocidade_filtrada = 0.0f;
-    float velocidade_inst;
-#endif
-
     p->encoder = p->htim_encoder->Instance->CNT;
 
     // Ângulo para controle (-180° a +180°)
     p->angulo_pendulo = ((float)p->encoder * 360.0f / 10000.0f) - 180.0f;
+}
 
-    // Evita pico na primeira chamada
-    if(primeira_leitura)
+/**
+ * @brief Calcula a velocidade angular do pêndulo usando janela de 5 ms
+ */
+static void AtualizaVelocidadeAngularPendulo(Pendulo_t *p)
+{
+    static uint16_t encoder_anterior = 0;
+    static uint8_t  contador = 0;
+    static uint8_t  primeira_leitura = 1;
+
+    HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 1);
+
+    if (primeira_leitura)
     {
-        encoder_anterior = p->encoder;
+        encoder_anterior  = p->encoder;
         p->velocidade_angular_pendulo = 0.0f;
         primeira_leitura = 0;
+
+        HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 0);
         return;
     }
 
-    // Diferença de contagens
-    delta_encoder = (int32_t)p->encoder - (int32_t)encoder_anterior;
+    contador++;
+    if (contador < 5)
+    {
+        HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 0);
+        return;
+    }
+    contador = 0;
 
-    // Corrige passagem pelo zero (wrap-around)
-    if(delta_encoder > 5000)
-        delta_encoder -= 10000;
-    else if(delta_encoder < -5000)
-        delta_encoder += 10000;
+    int32_t delta_encoder = (int32_t)p->encoder - (int32_t)encoder_anterior;
 
-#ifdef FILTRADA
-    velocidade_inst = delta_encoder * 36.0f;
+    // Corrige wrap-around
+    if (delta_encoder >  5000)
+    {
+    	delta_encoder -= 10000;
+    }
+    else if (delta_encoder < -5000)
+    {
+    	delta_encoder += 10000;
+    }
 
-    // Filtro exponencial
-    velocidade_filtrada =
-        0.8f * velocidade_filtrada +
-        0.2f * velocidade_inst;
+    p->velocidade_angular_pendulo = delta_encoder * 7.2f;
 
-    p->velocidade_angular_pendulo = velocidade_filtrada;
-#else
-
-    // Velocidade angular em graus/s // dt = 1 ms
-    p->velocidade_angular_pendulo = delta_encoder * 36.0f;
-
-#endif
     encoder_anterior = p->encoder;
+
     HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 0);
 }
-
-

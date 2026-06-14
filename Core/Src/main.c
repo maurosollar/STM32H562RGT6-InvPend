@@ -104,7 +104,7 @@ void atraso_us(uint32_t us)
  */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-	if(huart->Instance == UART4)
+	if (huart->Instance == UART4)
 	{
 		last_rx_time = HAL_GetTick();
 
@@ -120,7 +120,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 void Expira_RX_Buffer_Simulador()
 
 {
-	if((HAL_GetTick() - last_rx_time) > 1000 && rx_buffer[0] > 0)
+	if ((HAL_GetTick() - last_rx_time) > 1000 && rx_buffer[0] > 0)
 	{
 		memset(rx_buffer, 0, sizeof(rx_buffer));
 		HAL_UART_AbortReceive_IT(&huart4);
@@ -133,7 +133,7 @@ void Expira_RX_Buffer_Simulador()
  */
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
-	if(huart->Instance == UART4)
+	if (huart->Instance == UART4)
 	{
 		uart_tx_busy = 0;
 	}
@@ -144,7 +144,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
  */
 void Envia_simulador()
 {
-	if(uart_tx_busy == 0)
+	if (uart_tx_busy == 0)
 	{
 		uart_tx_busy = 1;
 
@@ -168,7 +168,7 @@ void Envia_simulador()
  */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	if(htim == &htim3)
+	if (htim == &htim3)
 	{
 	    flag_controle = 1;
 	}
@@ -263,7 +263,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	if(flag_controle == 1)
+	if (flag_controle == 1)
 	{
         Pendulo_AtualizaPendulo(&pendulo);
 
