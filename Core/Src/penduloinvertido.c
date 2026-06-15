@@ -152,9 +152,9 @@ static void VelocidadeMotor(Pendulo_t *p, int16_t velocidade)
 	static int16_t velocidade_anterior = 0;
 	uint32_t contagem_anterior;
 
-	if(abs(velocidade) > 300)
+	if(abs(velocidade) > 400)
 	{
-	    velocidade = (velocidade > 0) ? 300 : -300;
+	    velocidade = (velocidade > 0) ? 400 : -400;
 	}
 
 	p->velocidade_carro = velocidade;
@@ -278,38 +278,33 @@ static void SelfTest(Pendulo_t *p)
 
 static void SwingUp(Pendulo_t *p)
 {
-	const float g = 9.81f;
-	const float KSW = 40;
+    const float g = 9.81f;
+    const float KSW = 10.0f;
+
     float theta;
     float omega;
     float E;
     float Ee;
     float comando;
 
-    int16_t velocidade;
-
     theta = p->angulo_pendulo * M_PI / 180.0f;
     omega = p->velocidade_angular_pendulo * M_PI / 180.0f;
 
-    // Energia atual
-    E = 0.5f * omega * omega +
-        g * (1.0f - cosf(theta)) * KSW;
+    E =
+        0.5f * omega * omega +
+        g * (1.0f - cosf(theta));
 
-    // Erro de energia
-    Ee = E - (2.0f * g) * KSW;
+    Ee = E - (2.0f * g);
 
-    velocidade = (Ee * omega * cosf(theta));
-    tempo = (int32_t) velocidade;
+    comando = KSW * Ee * omega * cosf(theta);
 
-    comando = Ee * omega * cosf(theta);
+    if(comando > 400.0f)
+        comando = 400.0f;
 
-    if(comando > 300.0f)
-        comando = 300.0f;
+    if(comando < -400.0f)
+        comando = -400.0f;
 
-    if(comando < -300.0f)
-        comando = -300.0f;
-
-    VelocidadeMotor(p, (int16_t) comando);
+    VelocidadeMotor(p, (int16_t)comando);
 
     if(fabsf(p->angulo_pendulo) < 15.0f)
     {
@@ -321,7 +316,7 @@ static void SwingUp(Pendulo_t *p)
 static void Controle(Pendulo_t *p)
 {
 	const float dt = 0.001f;
-    const float velocidade_max = 300.0f; // mm/s
+    const float velocidade_max = 400.0f; // mm/s
 
     float erro;
     float derivada;
@@ -417,6 +412,7 @@ static void AtualizaVelocidadeAngularPendulo(Pendulo_t *p)
     contador++;
     if (contador < 5)
     {
+    	encoder_anterior  = p->encoder;
         HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 0);
         return;
     }
