@@ -152,9 +152,9 @@ static void VelocidadeMotor(Pendulo_t *p, int16_t velocidade)
 	static int16_t velocidade_anterior = 0;
 	uint32_t contagem_anterior;
 
-	if(abs(velocidade) > 400)
+	if(abs(velocidade) > 800)
 	{
-	    velocidade = (velocidade > 0) ? 400 : -400;
+	    velocidade = (velocidade > 0) ? 800 : -800;
 	}
 
 	p->velocidade_carro = velocidade;
@@ -298,11 +298,11 @@ static void SwingUp(Pendulo_t *p)
 
     comando = KSW * Ee * omega * cosf(theta);
 
-    if(comando > 400.0f)
-        comando = 400.0f;
+    if(comando > 600.0f)
+        comando = 600.0f;
 
-    if(comando < -400.0f)
-        comando = -400.0f;
+    if(comando < -600.0f)
+        comando = -600.0f;
 
     VelocidadeMotor(p, (int16_t)comando);
 
