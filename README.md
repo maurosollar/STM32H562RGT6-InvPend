@@ -47,6 +47,9 @@ baseada no ângulo do pêndulo.
 
 <img src="Docs/montagem01.png">
 
+### Montagem final
+
+<img src="Docs/montagem_final.jpg">
 
 ### Iniciando a configuração do STM32CubeMX
 
