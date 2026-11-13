@@ -14,7 +14,6 @@ static EstadoChave_t EstadoChave;
 // Funções privadas
 static void SelfTest(Pendulo_t *p);
 static void SwingUp(Pendulo_t *p);
-static void ControleLQR(Pendulo_t *p);
 static void Controle(Pendulo_t *p);
 static void AtualizaAngulo(Pendulo_t *p);
 static void AtualizaVelocidadeAngularPendulo(Pendulo_t *p);
@@ -60,7 +59,7 @@ void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor_pwm, uint32_
 
 
 /**
- * @brief Atualiza pêndulo dentro dos seus estados.
+ * @brief Atualiza pêndulo dentro dos seus estados, esta função é chamada a cada 1ms.
  */
 void Pendulo_AtualizaPendulo(Pendulo_t *p)
 {
@@ -89,7 +88,6 @@ void Pendulo_AtualizaPendulo(Pendulo_t *p)
 
         case PENDULO_CONTROLE:
             Controle(p);
-            //ControleLQR(p);
             break;
 
         case PENDULO_ERRO:
@@ -315,46 +313,6 @@ static void SwingUp(Pendulo_t *p)
 }
 
 
-static void ControleLQR(Pendulo_t *p)
-{
-    float angulo_radiado;
-    float u;
-
-    angulo_radiado = p->angulo_pendulo * M_PI / 180.0f;
-
-
-    // Ganhos LQR (EXEMPLO)
-    const float K1 = -10.0f;
-    const float K2 = -10.0f;
-    const float K3 = 150.0f;
-    const float K4 = 35.0f;
-
-    u =  (K1 * p->posicao_carro +
-          K2 * p->velocidade_carro +
-          K3 * angulo_radiado +
-          K4 * p->velocidade_angular_pendulo);
-
-    tempo = (int32_t) u;
-
-    // Saturação
-    if(u > 400.0f)
-        u = 400.0f;
-
-    if(u < -400.0f)
-        u = -400.0f;
-
-    VelocidadeMotor(p, (int16_t) u);
-    // Sai da região de estabilização
-    if(fabsf(p->angulo_pendulo) > 30.0f)
-    {
-
-        VelocidadeMotor(p, 0);
-
-        p->estado = PENDULO_SWINGUP;
-    }
-}
-
-
 // Controle PID
 static void Controle(Pendulo_t *p)
 {
@@ -367,7 +325,7 @@ static void Controle(Pendulo_t *p)
 
     //erro = 0 - p->angulo_pendulo; // setpoint = 0°
     erro = (float) (((float) p->encoder) - 5000); // setpoint = 0°
-    erro = erro + (p->posicao_carro/2); // Quanto maior o divisor mais instável
+    //erro = erro + (p->posicao_carro/2); // Quanto maior o divisor mais instável
 
     // Integral
     integral += erro * dt;
