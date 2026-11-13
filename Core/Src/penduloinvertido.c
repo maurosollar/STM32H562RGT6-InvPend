@@ -276,6 +276,7 @@ static void SelfTest(Pendulo_t *p)
 }
 
 
+
 static void SwingUp(Pendulo_t *p)
 {
     const float g = 9.81f;
@@ -311,6 +312,7 @@ static void SwingUp(Pendulo_t *p)
         p->estado = PENDULO_CONTROLE;
     }
 }
+
 
 
 #define KV_CARRO  15.0f   // (mm/s) por mm
