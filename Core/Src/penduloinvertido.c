@@ -38,7 +38,7 @@ void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor_pwm, uint32_
     p->velocidade_carro = 0;
 
     p->kp = 20.0f;
-    p->ki = 0.0f;
+    p->ki = 60.0f;
     p->kd = 0.0001f;
 
     p->htim_motor_pwm = htim_motor_pwm;
@@ -313,62 +313,42 @@ static void SwingUp(Pendulo_t *p)
 }
 
 
-// Controle PID
+#define KV_CARRO  15.0f   // (mm/s) por mm
+#define KX_CARRO  5.0f   // (mm/s²) por mm
+
 static void Controle(Pendulo_t *p)
 {
-	const float dt = 0.001f;
+    const float dt = 0.001f;
     const float velocidade_max = 400.0f; // mm/s
 
-    float erro;
-    float derivada;
-    float saida_pid;
+    float erro, derivada, saida, x;
 
-    //erro = 0 - p->angulo_pendulo; // setpoint = 0°
-    erro = (float) (((float) p->encoder) - 5000); // setpoint = 0°
-    //erro = erro + (p->posicao_carro/2); // Quanto maior o divisor mais instável
+    erro = (float)p->encoder - 5000.0f;  // contagens, 0 = vertical
+    x = (float)((int32_t)p->htim_conta_pulsos->Instance->CNT - 20000) * 0.05f; // mm, 0 = centro
 
-    // Integral
-    integral += erro * dt;
+    // Integrador único, já em mm/s: ângulo + posição do carro
+    integral += (p->ki * erro + KX_CARRO * x) * dt;
+    if(integral >  velocidade_max) integral =  velocidade_max;
+    if(integral < -velocidade_max) integral = -velocidade_max;
 
-    // Anti-windup
-    if(integral > 100.0f)
-        integral = 100.0f;
-
-    if(integral < -100.0f)
-        integral = -100.0f;
-
-    // Derivada
     derivada = (erro - erro_anterior) / dt;
-
-    // PID
-    saida_pid =
-            (p->kp * erro) +
-            (p->ki * integral) +
-            (p->kd * derivada);
-
-    // Saturação da velocidade
-    if(saida_pid > velocidade_max)
-        saida_pid = velocidade_max;
-
-    if(saida_pid < -velocidade_max)
-        saida_pid = -velocidade_max;
-
     erro_anterior = erro;
 
-    VelocidadeMotor(p, (int16_t)(saida_pid));
+    saida = (p->kp * erro) + (p->kd * derivada) + (KV_CARRO * x) + integral;
 
-    // Sai da região de estabilização
+    if(saida >  velocidade_max) saida =  velocidade_max;
+    if(saida < -velocidade_max) saida = -velocidade_max;
+
+    VelocidadeMotor(p, (int16_t)saida);
+
     if(fabsf(p->angulo_pendulo) > 30.0f)
     {
         integral = 0.0f;
         erro_anterior = 0.0f;
-
         VelocidadeMotor(p, 0);
-
         p->estado = PENDULO_SWINGUP;
     }
 }
-
 
 void Pendulo_SetaPID(Pendulo_t *p, float kp, float ki, float kd)
 {
@@ -395,7 +375,6 @@ static void AtualizaAngulo(Pendulo_t *p)
 static void AtualizaVelocidadeAngularPendulo(Pendulo_t *p)
 {
     static uint16_t encoder_anterior = 0;
-    static uint8_t  contador = 0;
     static uint8_t  primeira_leitura = 1;
 
     HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 1);
@@ -410,14 +389,9 @@ static void AtualizaVelocidadeAngularPendulo(Pendulo_t *p)
         return;
     }
 
-    contador++;
-    if (contador < 5)
-    {
-    	encoder_anterior  = p->encoder;
-        HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 0);
-        return;
-    }
-    contador = 0;
+    encoder_anterior  = p->encoder;
+    HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 0);
+
 
     int32_t delta_encoder = (int32_t)p->encoder - (int32_t)encoder_anterior;
 
