@@ -275,8 +275,6 @@ static void SelfTest(Pendulo_t *p)
 	// Retorna -5000(Carro todo a esquerda) 0(Centro) +5000(Carro todo a direita)
 }
 
-// teste
-
 static void SwingUp(Pendulo_t *p)
 {
     const float g = 9.81f;
@@ -377,6 +375,7 @@ static void AtualizaAngulo(Pendulo_t *p)
 static void AtualizaVelocidadeAngularPendulo(Pendulo_t *p)
 {
     static uint16_t encoder_anterior = 0;
+    static uint8_t  contador = 0;
     static uint8_t  primeira_leitura = 1;
 
     HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 1);
@@ -391,9 +390,14 @@ static void AtualizaVelocidadeAngularPendulo(Pendulo_t *p)
         return;
     }
 
-    encoder_anterior  = p->encoder;
-    HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 0);
-
+    contador++;
+    if (contador < 5)
+    {
+    	encoder_anterior  = p->encoder;
+        HAL_GPIO_WritePin(Time_Exec_GPIO_Port, Time_Exec_Pin, 0);
+        return;
+    }
+    contador = 0;
 
     int32_t delta_encoder = (int32_t)p->encoder - (int32_t)encoder_anterior;
 
