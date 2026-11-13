@@ -275,7 +275,7 @@ static void SelfTest(Pendulo_t *p)
 	// Retorna -5000(Carro todo a esquerda) 0(Centro) +5000(Carro todo a direita)
 }
 
-
+// teste
 
 static void SwingUp(Pendulo_t *p)
 {
