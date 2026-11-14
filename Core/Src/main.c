@@ -109,8 +109,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		last_rx_time = HAL_GetTick();
 
         Pendulo_SetaPID(&pendulo, (float) rx_buffer[0],
-        		                  (float) rx_buffer[1] / 1000,
-						          (float) rx_buffer[2] / 1000);
+        		                  (float) rx_buffer[1],
+						          (float) rx_buffer[2] / 10);
 	}
 }
 

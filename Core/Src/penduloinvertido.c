@@ -38,8 +38,8 @@ void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor_pwm, uint32_
     p->velocidade_carro = 0;
 
     p->kp = 20.0f;
-    p->ki = 50.0f;
-    p->kd = 0.05f;
+    p->ki = 60.0f;
+    p->kd = 0.0001f;
 
     p->htim_motor_pwm = htim_motor_pwm;
     p->htim_conta_pulsos = htim_conta_pulsos;
@@ -282,7 +282,7 @@ static void SelfTest(Pendulo_t *p)
 #define SW_VEL_MAX      800.0f   // mm/s
 #define SW_X_LIM        200.0f   // mm
 
-#define SW_KE           0.25f     // satura (bang-bang) até perto do alvo
+#define SW_KE           0.30f    // satura (bang-bang) até perto do alvo
 #define SW_E_ALVO       1.02f    // pequena folga p/ compensar atrito
 
 #define SW_KX           1.0f     // centralização lenta
@@ -397,10 +397,10 @@ static void SwingUp(Pendulo_t *p)
 
 
 
-#define KX_CARRO      5.0f     // (mm/s²) por mm
+#define KX_CARRO      10.0f     // (mm/s²) por mm
 #define KV_CARRO      15.0f    // (mm/s²) por (mm/s)
 #define CT_VEL_MAX    800.0f   // mm/s
-#define CT_ACEL_MAX   5000.0f  // mm/s² - reduza se o motor perder passo
+#define CT_ACEL_MAX   2500.0f  // mm/s² - reduza se o motor perder passo
 #define CT_TAU_W      0.004f   // s - filtro da velocidade angular
 #define CT_ANG_QUEDA  30.0f    // graus
 
