@@ -285,7 +285,7 @@ static void SelfTest(Pendulo_t *p)
 
 // Ganho de energia
 #define SW_KE           0.5f
-#define SW_E_ALVO       2.0f
+#define SW_E_ALVO       1.0f
 
 // Centralização
 #define SW_KX           2.0f
