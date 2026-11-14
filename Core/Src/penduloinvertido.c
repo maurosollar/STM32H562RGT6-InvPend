@@ -275,41 +275,155 @@ static void SelfTest(Pendulo_t *p)
 	// Retorna -5000(Carro todo a esquerda) 0(Centro) +5000(Carro todo a direita)
 }
 
+
+#define SW_PERIODO      10.00f
+
+// Limites conservadores para os primeiros testes
+#define SW_ACEL_MAX     300.0f
+#define SW_VEL_MAX      500.0f
+#define SW_X_LIM        200.0f
+
+// Ganho de energia
+#define SW_KE           0.5f
+#define SW_E_ALVO       2.0f
+
+// Centralização
+#define SW_KX           2.0f
+#define SW_KV           3.0f
+
+// Captura
+#define SW_CAPTURA_ANG  15.0f
+#define SW_CAPTURA_VEL  200.0f
+
+// Inverter para -1 se o bombeamento retirar energia
+#define SW_SINAL        -1.0f
+
 static void SwingUp(Pendulo_t *p)
 {
-    const float g = 9.81f;
-    const float KSW = 10.0f;
+    static float v_cmd = 0.0f;
+    static uint8_t iniciado = 0;
+    static uint16_t contador_inicio = 0;
+
+    const float dt = 0.001f;
+    const float GRAU_RAD = 0.017453293f;
+    const float PI = 3.141592654f;
+    const float w0 = 6.2831853f / SW_PERIODO;
 
     float theta;
     float omega;
-    float E;
-    float Ee;
+    float c;
+    float En;
+    float erro_E;
+    float produto;
     float comando;
+    float a_swing;
+    float a_centro;
+    float a;
+    float x;
+    float x_parada;
 
-    theta = p->angulo_pendulo * M_PI / 180.0f;
-    omega = p->velocidade_angular_pendulo * M_PI / 180.0f;
-
-    E =
-        0.5f * omega * omega +
-        g * (1.0f - cosf(theta));
-
-    Ee = E - (2.0f * g);
-
-    comando = KSW * Ee * omega * cosf(theta);
-
-    if(comando > 600.0f)
-        comando = 600.0f;
-
-    if(comando < -600.0f)
-        comando = -600.0f;
-
-    VelocidadeMotor(p, (int16_t)comando);
-
-    if(fabsf(p->angulo_pendulo) < 15.0f)
+    // Inicialização
+    if (!iniciado)
     {
-        p->estado = PENDULO_CONTROLE;
+        v_cmd = (float)p->velocidade_carro;
+        contador_inicio = 0;
+        iniciado = 1;
     }
+
+    // Ângulo próximo do topo
+    if (fabsf(p->angulo_pendulo) < SW_CAPTURA_ANG &&
+        fabsf(p->velocidade_angular_pendulo) < SW_CAPTURA_VEL)
+    {
+        integral = 0.0f;
+        erro_anterior = (float)p->encoder - 5000.0f;
+
+        iniciado = 0;
+        p->estado = PENDULO_CONTROLE;
+        return;
+    }
+
+    // Ângulo: 0 = embaixo e PI = em cima
+    theta = p->angulo_pendulo * GRAU_RAD + PI;
+
+    omega = p->velocidade_angular_pendulo * GRAU_RAD;
+
+    c = cosf(theta);
+
+    // Posição do carro em mm
+    x = (float)p->posicao_carro;
+
+    // Energia normalizada
+    En = 0.5f * (omega / w0) * (omega / w0) - c;
+
+    // Energia que falta para atingir o topo
+    erro_E = SW_E_ALVO - En;
+
+    // Lei de bombeamento
+    produto = omega * c;
+
+    if (produto > 0.001f)
+        comando = -1.0f;
+    else if (produto < -0.001f)
+        comando = 1.0f;
+    else
+        comando = 0.0f;
+
+    // Intensidade proporcional ao erro de energia
+    a_swing = SW_KE * erro_E * comando * SW_SINAL;
+
+    // Saturação normalizada
+    if (a_swing > 1.0f)
+        a_swing = 1.0f;
+
+    if (a_swing < -1.0f)
+        a_swing = -1.0f;
+
+    a_swing *= SW_ACEL_MAX;
+
+    // Impulso inicial para iniciar a oscilação
+    if (contador_inicio < 50)
+    {
+        a_swing = SW_SINAL * 100.0f;
+        contador_inicio++;
+    }
+
+    // Centralização do carro
+    a_centro = -SW_KX * x - SW_KV * v_cmd;
+
+    // Aceleração resultante
+    a = a_swing + a_centro;
+
+    // Saturação
+    if (a > SW_ACEL_MAX)
+        a = SW_ACEL_MAX;
+
+    if (a < -SW_ACEL_MAX)
+        a = -SW_ACEL_MAX;
+
+    // Proteção de curso considerando distância de frenagem
+    x_parada = x + (v_cmd * fabsf(v_cmd)) /
+                   (2.0f * SW_ACEL_MAX);
+
+    if (x_parada > SW_X_LIM)
+        a = -SW_ACEL_MAX;
+
+    if (x_parada < -SW_X_LIM)
+        a = SW_ACEL_MAX;
+
+    // Integração da aceleração
+    v_cmd += a * dt;
+
+    // Limite de velocidade
+    if (v_cmd > SW_VEL_MAX)
+        v_cmd = SW_VEL_MAX;
+
+    if (v_cmd < -SW_VEL_MAX)
+        v_cmd = -SW_VEL_MAX;
+
+    // Comando do motor
+    VelocidadeMotor(p, (int16_t)v_cmd);
 }
+
 
 
 
