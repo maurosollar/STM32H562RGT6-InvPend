@@ -38,7 +38,7 @@ void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor_pwm, uint32_
     p->velocidade_carro = 0;
 
     p->kp = 20.0f;
-    p->ki = 60.0f;
+    p->ki = 50.0f;
     p->kd = 0.0001f;
 
     p->htim_motor_pwm = htim_motor_pwm;
@@ -276,53 +276,39 @@ static void SelfTest(Pendulo_t *p)
 }
 
 
-#define SW_PERIODO      10.00f
+#define SW_PERIODO      1.2f    // MEDIR! período de pequenas oscilações (s)
 
-// Limites conservadores para os primeiros testes
-#define SW_ACEL_MAX     300.0f
-#define SW_VEL_MAX      500.0f
-#define SW_X_LIM        200.0f
+#define SW_ACEL_MAX     2500.0f  // mm/s² (~0.2 g) -> principal "acelerador"
+#define SW_VEL_MAX      800.0f   // mm/s
+#define SW_X_LIM        200.0f   // mm
 
-// Ganho de energia
-#define SW_KE           0.5f
-#define SW_E_ALVO       1.0f
+#define SW_KE           0.25f     // satura (bang-bang) até perto do alvo
+#define SW_E_ALVO       1.02f    // pequena folga p/ compensar atrito
 
-// Centralização
-#define SW_KX           2.0f
-#define SW_KV           3.0f
+#define SW_KX           1.0f     // centralização lenta
+#define SW_KV           1.5f
 
-// Captura
-#define SW_CAPTURA_ANG  15.0f
-#define SW_CAPTURA_VEL  200.0f
+#define SW_CAPTURA_ANG  15.0f    // graus
+#define SW_CAPTURA_VEL  200.0f   // graus/s
+#define SW_CAPTURA_X    120.0f   // mm - só captura com o carro perto do centro
 
-// Inverter para -1 se o bombeamento retirar energia
-#define SW_SINAL        -1.0f
+#define SW_KICK_MS      120u     // duração de cada meia do impulso inicial
+#define SW_SINAL        -1.0f    // troque se a amplitude diminuir
 
 static void SwingUp(Pendulo_t *p)
 {
-    static float v_cmd = 0.0f;
-    static uint8_t iniciado = 0;
+    static float    v_cmd = 0.0f;
+    static uint8_t  iniciado = 0;
     static uint16_t contador_inicio = 0;
 
-    const float dt = 0.001f;
+    const float dt       = 0.001f;
     const float GRAU_RAD = 0.017453293f;
-    const float PI = 3.141592654f;
-    const float w0 = 6.2831853f / SW_PERIODO;
+    const float PI_F     = 3.141592654f;
+    const float w0       = 6.2831853f / SW_PERIODO;
 
-    float theta;
-    float omega;
-    float c;
-    float En;
-    float erro_E;
-    float produto;
-    float comando;
-    float a_swing;
-    float a_centro;
-    float a;
-    float x;
-    float x_parada;
+    float ang, theta, omega, c, En, erro_E, produto;
+    float a_swing, a_centro, a, x, x_parada;
 
-    // Inicialização
     if (!iniciado)
     {
         v_cmd = (float)p->velocidade_carro;
@@ -330,98 +316,82 @@ static void SwingUp(Pendulo_t *p)
         iniciado = 1;
     }
 
-    // Ângulo próximo do topo
-    if (fabsf(p->angulo_pendulo) < SW_CAPTURA_ANG &&
-        fabsf(p->velocidade_angular_pendulo) < SW_CAPTURA_VEL)
+    // Normaliza ângulo para [-180, 180)  (0 = em cima)
+    ang = fmodf(p->angulo_pendulo + 180.0f, 360.0f);
+    if (ang < 0.0f) ang += 360.0f;
+    ang -= 180.0f;
+
+    x = (float)p->posicao_carro;
+
+    // Captura
+    if (fabsf(ang) < SW_CAPTURA_ANG &&
+        fabsf(p->velocidade_angular_pendulo) < SW_CAPTURA_VEL &&
+        fabsf(x) < SW_CAPTURA_X)
     {
         integral = 0.0f;
         erro_anterior = (float)p->encoder - 5000.0f;
-
         iniciado = 0;
         p->estado = PENDULO_CONTROLE;
         return;
     }
 
-    // Ângulo: 0 = embaixo e PI = em cima
-    theta = p->angulo_pendulo * GRAU_RAD + PI;
-
+    // theta: 0 = embaixo, PI = em cima
+    theta = ang * GRAU_RAD + PI_F;
     omega = p->velocidade_angular_pendulo * GRAU_RAD;
+    c     = cosf(theta);
 
-    c = cosf(theta);
-
-    // Posição do carro em mm
-    x = (float)p->posicao_carro;
-
-    // Energia normalizada
-    En = 0.5f * (omega / w0) * (omega / w0) - c;
-
-    // Energia que falta para atingir o topo
+    En     = 0.5f * (omega / w0) * (omega / w0) - c;
     erro_E = SW_E_ALVO - En;
 
-    // Lei de bombeamento
+    // Lei de bombeamento: a = Ke * erro_E * sign(omega*cos) * sinal
     produto = omega * c;
+    a_swing = SW_KE * erro_E;
+    if (a_swing >  1.0f) a_swing =  1.0f;
+    if (a_swing < -1.0f) a_swing = -1.0f;
 
-    if (produto > 0.001f)
-        comando = -1.0f;
-    else if (produto < -0.001f)
-        comando = 1.0f;
-    else
-        comando = 0.0f;
-
-    // Intensidade proporcional ao erro de energia
-    a_swing = SW_KE * erro_E * comando * SW_SINAL;
-
-    // Saturação normalizada
-    if (a_swing > 1.0f)
-        a_swing = 1.0f;
-
-    if (a_swing < -1.0f)
-        a_swing = -1.0f;
+    if (produto > 0.001f)       a_swing *= -SW_SINAL;
+    else if (produto < -0.001f) a_swing *=  SW_SINAL;
+    else                        a_swing  = 0.0f;
 
     a_swing *= SW_ACEL_MAX;
 
-    // Impulso inicial para iniciar a oscilação
-    if (contador_inicio < 50)
+    // Impulso inicial (ida e volta) só se o pêndulo estiver parado embaixo
+    if (contador_inicio < 2u * SW_KICK_MS)
     {
-        a_swing = SW_SINAL * 100.0f;
-        contador_inicio++;
+        if (contador_inicio == 0u && En > -0.9f)
+        {
+            contador_inicio = 2u * SW_KICK_MS;      // já balança: pula o kick
+        }
+        else
+        {
+            a_swing = (contador_inicio < SW_KICK_MS) ? SW_ACEL_MAX : -SW_ACEL_MAX;
+            contador_inicio++;
+        }
     }
 
-    // Centralização do carro
+    // Centralização fraca
     a_centro = -SW_KX * x - SW_KV * v_cmd;
 
-    // Aceleração resultante
     a = a_swing + a_centro;
+    if (a >  SW_ACEL_MAX) a =  SW_ACEL_MAX;
+    if (a < -SW_ACEL_MAX) a = -SW_ACEL_MAX;
 
-    // Saturação
-    if (a > SW_ACEL_MAX)
-        a = SW_ACEL_MAX;
+    // Proteção de curso (distância de frenagem)
+    x_parada = x + (v_cmd * fabsf(v_cmd)) / (2.0f * SW_ACEL_MAX);
+    if (x_parada >  SW_X_LIM) a = -SW_ACEL_MAX;
+    if (x_parada < -SW_X_LIM) a =  SW_ACEL_MAX;
 
-    if (a < -SW_ACEL_MAX)
-        a = -SW_ACEL_MAX;
-
-    // Proteção de curso considerando distância de frenagem
-    x_parada = x + (v_cmd * fabsf(v_cmd)) /
-                   (2.0f * SW_ACEL_MAX);
-
-    if (x_parada > SW_X_LIM)
-        a = -SW_ACEL_MAX;
-
-    if (x_parada < -SW_X_LIM)
-        a = SW_ACEL_MAX;
-
-    // Integração da aceleração
     v_cmd += a * dt;
+    if (v_cmd >  SW_VEL_MAX) v_cmd =  SW_VEL_MAX;
+    if (v_cmd < -SW_VEL_MAX) v_cmd = -SW_VEL_MAX;
 
-    // Limite de velocidade
-    if (v_cmd > SW_VEL_MAX)
-        v_cmd = SW_VEL_MAX;
-
-    if (v_cmd < -SW_VEL_MAX)
-        v_cmd = -SW_VEL_MAX;
-
-    // Comando do motor
     VelocidadeMotor(p, (int16_t)v_cmd);
+
+    if(fabsf(p->angulo_pendulo) < SW_CAPTURA_ANG)
+    {
+        p->estado = PENDULO_CONTROLE;
+    }
+
 }
 
 
@@ -461,6 +431,7 @@ static void Controle(Pendulo_t *p)
         erro_anterior = 0.0f;
         VelocidadeMotor(p, 0);
         p->estado = PENDULO_SWINGUP;
+        HAL_Delay(2000);
     }
 }
 

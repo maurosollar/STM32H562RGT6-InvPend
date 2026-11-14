@@ -326,6 +326,8 @@ Polia GT2 tem 2mm por dente, então como utilizo de 40 dentes, a cada volta tem 
 Motor que utilizo são 200 passos/volta
 1 passo -> 80/200 = 0,4mm, mas como o driver esta configurado 1600 pulsos/volta, então 0,05mm/pulso
 
+Tamanho da haste = 50cm
+Diâmetro = 6.45mm
 Peso da haste do pêndulo = 44.2g
 Flange do pêndulo  = 9.1g
 
