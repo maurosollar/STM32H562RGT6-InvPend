@@ -39,7 +39,7 @@ void Pendulo_Inicializa(Pendulo_t *p, TIM_HandleTypeDef *htim_motor_pwm, uint32_
 
     p->kp = 20.0f;
     p->ki = 50.0f;
-    p->kd = 0.0001f;
+    p->kd = 0.05f;
 
     p->htim_motor_pwm = htim_motor_pwm;
     p->htim_conta_pulsos = htim_conta_pulsos;
@@ -397,41 +397,49 @@ static void SwingUp(Pendulo_t *p)
 
 
 
-#define KV_CARRO  15.0f   // (mm/s) por mm
-#define KX_CARRO  5.0f   // (mm/s²) por mm
+#define KX_CARRO      5.0f     // (mm/s²) por mm
+#define KV_CARRO      15.0f    // (mm/s²) por (mm/s)
+#define CT_VEL_MAX    800.0f   // mm/s
+#define CT_ACEL_MAX   5000.0f  // mm/s² - reduza se o motor perder passo
+#define CT_TAU_W      0.004f   // s - filtro da velocidade angular
+#define CT_ANG_QUEDA  30.0f    // graus
 
 static void Controle(Pendulo_t *p)
 {
-    const float dt = 0.001f;
-    const float velocidade_max = 400.0f; // mm/s
+    const float dt   = 0.001f;
+    const float alfa = dt / (CT_TAU_W + dt);
+    float erro, x, a, v_antes;
 
-    float erro, derivada, saida, x;
+    static float ct_v_cmd = 0.0f;  // mm/s
+    static float ct_w_f   = 0.0f;  // contagens/s (filtrado)
+    static float ct_e_ant = 0.0f;
 
-    erro = (float)p->encoder - 5000.0f;  // contagens, 0 = vertical
-    x = (float)((int32_t)p->htim_conta_pulsos->Instance->CNT - 20000) * 0.05f; // mm, 0 = centro
+    erro = (float)p->encoder - 5000.0f;   // contagens, 0 = vertical
+    x = (float)((int32_t)p->htim_conta_pulsos->Instance->CNT - 20000) * 0.05f; // mm
 
-    // Integrador único, já em mm/s: ângulo + posição do carro
-    integral += (p->ki * erro + KX_CARRO * x) * dt;
-    if(integral >  velocidade_max) integral =  velocidade_max;
-    if(integral < -velocidade_max) integral = -velocidade_max;
+    // Velocidade angular filtrada (contagens/s)
+    ct_w_f  += alfa * ((erro - ct_e_ant) / dt - ct_w_f);
+    ct_e_ant = erro;
 
-    derivada = (erro - erro_anterior) / dt;
-    erro_anterior = erro;
+    // Mesma lei do PI anterior, escrita em aceleração
+    a = p->ki * erro + p->kp * ct_w_f + KX_CARRO * x + KV_CARRO * ct_v_cmd;
 
-    saida = (p->kp * erro) + (p->kd * derivada) + (KV_CARRO * x) + integral;
+    if (a >  CT_ACEL_MAX) a =  CT_ACEL_MAX;
+    if (a < -CT_ACEL_MAX) a = -CT_ACEL_MAX;
 
-    if(saida >  velocidade_max) saida =  velocidade_max;
-    if(saida < -velocidade_max) saida = -velocidade_max;
+    v_antes   = ct_v_cmd;
+    ct_v_cmd += a * dt;
 
-    VelocidadeMotor(p, (int16_t)saida);
+    // Limite de velocidade sem degrau (importa logo após a captura,
+    // quando o carro pode chegar a até 800 mm/s vindo do swing-up)
+    if (ct_v_cmd >  CT_VEL_MAX) ct_v_cmd = fmaxf( CT_VEL_MAX, v_antes - CT_ACEL_MAX * dt);
+    if (ct_v_cmd < -CT_VEL_MAX) ct_v_cmd = fminf(-CT_VEL_MAX, v_antes + CT_ACEL_MAX * dt);
 
-    if(fabsf(p->angulo_pendulo) > 30.0f)
+    VelocidadeMotor(p, (int16_t)ct_v_cmd);
+
+    if (fabsf(p->angulo_pendulo) > CT_ANG_QUEDA)
     {
-        integral = 0.0f;
-        erro_anterior = 0.0f;
-        VelocidadeMotor(p, 0);
-        p->estado = PENDULO_SWINGUP;
-        HAL_Delay(2000);
+        p->estado = PENDULO_SWINGUP;   // o swing-up desacelera o carro com rampa
     }
 }
 
